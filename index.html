@@ -395,6 +395,155 @@
         .export-btn:active {
             transform: translateY(0);
         }
+        .person-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .person-filter button {
+            padding: 6px 14px;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        .person-filter button:hover {
+            background: #f0f0ff;
+        }
+        .person-filter button.active {
+            background: #667eea;
+            color: white;
+        }
+        .add-data-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 150px;
+            background: linear-gradient(135deg, #1ABC9C 0%, #16A085 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1em;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .add-data-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .modal-close {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #999;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .form-actions button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d6;
+        }
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        .code-output {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 0.9em;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .copy-success {
+            color: #1ABC9C;
+            font-weight: 600;
+            margin-top: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -455,6 +604,7 @@
             <div class="collapsible-content collapsed" id="dataTableContent">
                 <div style="border-top: 2px solid #667eea; margin-top: 10px; padding-top: 20px;">
                     <div id="monthFilter" class="month-filter"></div>
+                    <div id="personFilter" class="person-filter"></div>
                     <table id="dataTable">
                         <thead>
                             <tr>
@@ -471,7 +621,45 @@
             </div>
         </div>
 
+        <button class="add-data-btn" onclick="openAddDataModal()">+ 添加数据</button>
         <button class="export-btn" onclick="exportToImage()">📷 导出图片</button>
+    </div>
+
+    <!-- 添加数据弹窗 -->
+    <div class="modal-overlay" id="addDataModal">
+        <div class="modal">
+            <span class="modal-close" onclick="closeAddDataModal()">&times;</span>
+            <h2>添加跑步数据</h2>
+            <div class="form-group">
+                <label>姓名</label>
+                <select id="inputName">
+                    <option value="">-- 选择或输入新名字 --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>或输入新名字</label>
+                <input type="text" id="inputNewName" placeholder="如果是新成员，在此输入">
+            </div>
+            <div class="form-group">
+                <label>日期</label>
+                <input type="date" id="inputDate" value="">
+            </div>
+            <div class="form-group">
+                <label>距离 (km)</label>
+                <input type="number" id="inputDistance" step="0.01" min="0" placeholder="例如: 5.5">
+            </div>
+            <div class="form-group">
+                <label>备注 (可选)</label>
+                <input type="text" id="inputNote" placeholder="例如: w10">
+            </div>
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="closeAddDataModal()">取消</button>
+                <button class="btn-primary" onclick="generateDataCode()">生成代码</button>
+            </div>
+            <div id="codeOutput" class="code-output" style="display: none;"></div>
+            <button id="copyBtn" class="btn-primary" style="display: none; margin-top: 10px; width: 100%;" onclick="copyCode()">复制代码</button>
+            <div id="copySuccess" class="copy-success">已复制到剪贴板!</div>
+        </div>
     </div>
 
     <script>
@@ -1532,6 +1720,7 @@
 
         // 月份筛选状态
         let currentMonthFilter = 'all';
+        let currentPersonFilter = 'all';
 
         // 获取月份名称
         function getMonthName(monthNum) {
@@ -1561,14 +1750,44 @@
             });
         }
 
+        // 创建人员筛选器
+        function createPersonFilter() {
+            const container = document.getElementById('personFilter');
+            const persons = [...new Set(rawData.map(item => item.name))].sort();
+
+            let html = '<button class="active" data-person="all">全部成员</button>';
+            persons.forEach(person => {
+                html += `<button data-person="${person}">${person}</button>`;
+            });
+
+            container.innerHTML = html;
+
+            container.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentPersonFilter = e.target.dataset.person;
+                    renderDataTable();
+                });
+            });
+        }
+
         // 渲染数据表格
         function renderDataTable() {
             const tbody = document.querySelector('#dataTable tbody');
             tbody.innerHTML = '';
 
-            const filteredData = currentMonthFilter === 'all'
-                ? rawData
-                : rawData.filter(item => item.date.substring(0, 2) === currentMonthFilter);
+            let filteredData = rawData;
+
+            // 月份筛选
+            if (currentMonthFilter !== 'all') {
+                filteredData = filteredData.filter(item => item.date.substring(0, 2) === currentMonthFilter);
+            }
+
+            // 人员筛选
+            if (currentPersonFilter !== 'all') {
+                filteredData = filteredData.filter(item => item.name === currentPersonFilter);
+            }
 
             filteredData.forEach(item => {
                 const row = document.createElement('tr');
@@ -1737,8 +1956,9 @@
             btn.innerHTML = '⏳ 导出中...';
             btn.disabled = true;
 
-            // 隐藏导出按钮
+            // 隐藏导出按钮和添加数据按钮
             btn.style.display = 'none';
+            document.querySelector('.add-data-btn').style.display = 'none';
 
             html2canvas(document.querySelector('.container'), {
                 backgroundColor: null,
@@ -1754,16 +1974,121 @@
 
                 // 恢复按钮
                 btn.style.display = 'block';
+                document.querySelector('.add-data-btn').style.display = 'block';
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }).catch(err => {
                 console.error('导出失败:', err);
                 alert('导出失败，请重试');
                 btn.style.display = 'block';
+                document.querySelector('.add-data-btn').style.display = 'block';
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             });
         }
+
+        // 添加数据弹窗相关函数
+        function openAddDataModal() {
+            const modal = document.getElementById('addDataModal');
+            modal.classList.add('active');
+
+            // 填充人员下拉框
+            const select = document.getElementById('inputName');
+            const persons = [...new Set(rawData.map(item => item.name))].sort();
+            select.innerHTML = '<option value="">-- 选择已有成员 --</option>';
+            persons.forEach(person => {
+                select.innerHTML += `<option value="${person}">${person}</option>`;
+            });
+
+            // 设置默认日期为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('inputDate').value = today;
+
+            // 清空其他字段
+            document.getElementById('inputNewName').value = '';
+            document.getElementById('inputDistance').value = '';
+            document.getElementById('inputNote').value = '';
+            document.getElementById('codeOutput').style.display = 'none';
+            document.getElementById('copyBtn').style.display = 'none';
+            document.getElementById('copySuccess').style.display = 'none';
+        }
+
+        function closeAddDataModal() {
+            const modal = document.getElementById('addDataModal');
+            modal.classList.remove('active');
+        }
+
+        function generateDataCode() {
+            const selectName = document.getElementById('inputName').value;
+            const newName = document.getElementById('inputNewName').value.trim();
+            const dateInput = document.getElementById('inputDate').value;
+            const distance = parseFloat(document.getElementById('inputDistance').value);
+            const note = document.getElementById('inputNote').value.trim();
+
+            // 确定姓名
+            const name = newName || selectName;
+            if (!name) {
+                alert('请选择或输入姓名');
+                return;
+            }
+            if (!dateInput) {
+                alert('请选择日期');
+                return;
+            }
+            if (isNaN(distance) || distance <= 0) {
+                alert('请输入有效的距离');
+                return;
+            }
+
+            // 转换日期格式 2025-01-14 -> 0114
+            const dateParts = dateInput.split('-');
+            const dateCode = dateParts[1] + dateParts[2];
+
+            // 计算新ID
+            const maxId = Math.max(...rawData.map(item => item.id));
+            const newId = maxId + 1;
+
+            // 生成代码
+            let code = `{ id: ${newId}, name: '${name}', date: '${dateCode}', distance: ${distance}, unit: 'km'`;
+            if (note) {
+                code += `, note: '${note}'`;
+            }
+            code += ' },';
+
+            document.getElementById('codeOutput').textContent = code;
+            document.getElementById('codeOutput').style.display = 'block';
+            document.getElementById('copyBtn').style.display = 'block';
+        }
+
+        function copyCode() {
+            const code = document.getElementById('codeOutput').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                document.getElementById('copySuccess').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('copySuccess').style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+                // 备用方案
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                document.getElementById('copySuccess').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('copySuccess').style.display = 'none';
+                }, 2000);
+            });
+        }
+
+        // 点击弹窗外部关闭
+        document.getElementById('addDataModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAddDataModal();
+            }
+        });
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
@@ -1776,6 +2101,7 @@
             renderRunCountChart();
             renderWeeklyTrendChart();
             createMonthFilter();
+            createPersonFilter();
             renderDataTable();
         });
     </script>
