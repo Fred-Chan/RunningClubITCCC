@@ -6,6 +6,7 @@
     <title>跑步数据统计图表</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -462,6 +463,9 @@
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
+        .modal.wide {
+            max-width: 700px;
+        }
         .modal h2 {
             color: #333;
             margin-bottom: 20px;
@@ -487,7 +491,7 @@
             font-weight: 600;
             color: #333;
         }
-        .form-group input, .form-group select {
+        .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 10px 12px;
             border: 2px solid #e0e0e0;
@@ -495,7 +499,12 @@
             font-size: 1em;
             transition: border-color 0.2s;
         }
-        .form-group input:focus, .form-group select:focus {
+        .form-group textarea {
+            font-family: monospace;
+            resize: vertical;
+            min-height: 150px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -520,6 +529,10 @@
         .btn-primary:hover {
             background: #5568d6;
         }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
         .btn-secondary {
             background: #e0e0e0;
             color: #333;
@@ -527,16 +540,12 @@
         .btn-secondary:hover {
             background: #d0d0d0;
         }
-        .code-output {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            font-family: monospace;
-            font-size: 0.9em;
-            margin-top: 15px;
-            white-space: pre-wrap;
-            word-break: break-all;
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
         }
         .copy-success {
             color: #1ABC9C;
@@ -544,10 +553,168 @@
             margin-top: 10px;
             display: none;
         }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(102, 126, 234, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-overlay.hidden {
+            display: none;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+        .config-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 0.9em;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .config-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .batch-import-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 270px;
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1em;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .batch-import-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .import-preview {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .import-preview-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9em;
+        }
+        .import-preview-item:last-child {
+            border-bottom: none;
+        }
+        .import-preview-item.valid {
+            color: #27ae60;
+        }
+        .import-preview-item.invalid {
+            color: #e74c3c;
+        }
+        .import-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 8px;
+        }
+        .import-stats span {
+            font-weight: 600;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-connected {
+            background: #27ae60;
+        }
+        .status-disconnected {
+            background: #e74c3c;
+        }
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 0.85em;
+            z-index: 1000;
+        }
+        .format-help {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 0.85em;
+        }
+        .format-help code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="mainContainer">
         <h1>🏃 2025年跑步数据统计</h1>
 
         <div class="stats-summary" id="statsSummary"></div>
@@ -622,7 +789,21 @@
         </div>
 
         <button class="add-data-btn" onclick="openAddDataModal()">+ 添加数据</button>
+        <button class="batch-import-btn" onclick="openBatchImportModal()">📥 批量导入</button>
         <button class="export-btn" onclick="exportToImage()">📷 导出图片</button>
+        <button class="config-btn" onclick="openConfigModal()">⚙️ 配置</button>
+    </div>
+
+    <!-- 连接状态指示器 -->
+    <div class="connection-status" id="connectionStatus">
+        <span class="status-indicator status-disconnected" id="statusIndicator"></span>
+        <span id="statusText">未连接</span>
+    </div>
+
+    <!-- 加载中遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">加载数据中...</div>
     </div>
 
     <!-- 添加数据弹窗 -->
@@ -654,18 +835,93 @@
             </div>
             <div class="form-actions">
                 <button class="btn-secondary" onclick="closeAddDataModal()">取消</button>
-                <button class="btn-primary" onclick="generateDataCode()">生成代码</button>
+                <button class="btn-primary" id="saveDataBtn" onclick="saveData()">保存数据</button>
             </div>
-            <div id="codeOutput" class="code-output" style="display: none;"></div>
-            <button id="copyBtn" class="btn-primary" style="display: none; margin-top: 10px; width: 100%;" onclick="copyCode()">复制代码</button>
-            <div id="copySuccess" class="copy-success">已复制到剪贴板!</div>
+            <div class="success-message" id="addSuccess">数据添加成功!</div>
+            <div class="error-message" id="addError"></div>
+        </div>
+    </div>
+
+    <!-- 批量导入弹窗 -->
+    <div class="modal-overlay" id="batchImportModal">
+        <div class="modal wide">
+            <span class="modal-close" onclick="closeBatchImportModal()">&times;</span>
+            <h2>批量导入数据</h2>
+            <div class="format-help">
+                <strong>格式说明：</strong>每行一条数据，使用逗号或空格分隔<br>
+                格式: <code>姓名, 日期(MMDD或MM-DD或M月D日), 距离, 备注(可选)</code><br>
+                示例:<br>
+                <code>徐岚, 1220, 5.5</code><br>
+                <code>方文, 12-21, 10, 周末训练</code><br>
+                <code>梁晨, 12月22日, 3.5</code>
+            </div>
+            <div class="form-group">
+                <label>批量数据</label>
+                <textarea id="batchInput" placeholder="粘贴数据到这里，每行一条..."></textarea>
+            </div>
+            <button class="btn-secondary" onclick="previewBatchData()" style="width: 100%; margin-bottom: 10px;">预览数据</button>
+            <div id="batchPreview" class="import-preview" style="display: none;"></div>
+            <div id="batchStats" class="import-stats" style="display: none;"></div>
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="closeBatchImportModal()">取消</button>
+                <button class="btn-primary" id="batchImportBtn" onclick="executeBatchImport()" disabled>导入数据</button>
+            </div>
+            <div class="success-message" id="batchSuccess"></div>
+            <div class="error-message" id="batchError"></div>
+        </div>
+    </div>
+
+    <!-- 配置弹窗 -->
+    <div class="modal-overlay" id="configModal">
+        <div class="modal">
+            <span class="modal-close" onclick="closeConfigModal()">&times;</span>
+            <h2>Supabase 配置</h2>
+            <div class="format-help">
+                <strong>设置说明：</strong><br>
+                1. 登录 <a href="https://supabase.com" target="_blank">Supabase</a> 创建项目<br>
+                2. 在 Settings > API 中获取 URL 和 anon key<br>
+                3. 在 SQL Editor 中运行以下SQL创建表：
+                <pre style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 4px; font-size: 0.8em; overflow-x: auto;">
+CREATE TABLE running_records (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  date TEXT NOT NULL,
+  distance NUMERIC NOT NULL,
+  unit TEXT DEFAULT 'km',
+  note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 允许匿名访问
+ALTER TABLE running_records ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
+            </div>
+            <div class="form-group">
+                <label>Supabase URL</label>
+                <input type="text" id="supabaseUrl" placeholder="https://xxx.supabase.co">
+            </div>
+            <div class="form-group">
+                <label>Supabase Anon Key</label>
+                <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
+            </div>
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="closeConfigModal()">取消</button>
+                <button class="btn-primary" onclick="saveConfig()">保存配置</button>
+            </div>
+            <div class="success-message" id="configSuccess">配置保存成功!</div>
+            <div class="error-message" id="configError"></div>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+            <button class="btn-danger" onclick="clearConfig()" style="width: 100%;">清除配置（使用本地数据）</button>
         </div>
     </div>
 
     <script>
-        // 原始数据
-        const rawData = [
-            // 1月数据
+        // ============== Supabase 配置 ==============
+        let supabaseClient = null;
+        let isConnected = false;
+
+        // 本地备份数据
+        const localData = [
             { id: 1, name: '杨靖', date: '0114', distance: 6, unit: 'km' },
             { id: 2, name: '陈峥嵘', date: '0114', distance: 1, unit: 'km' },
             { id: 3, name: '徐岚', date: '0114', distance: 6.5, unit: 'km' },
@@ -676,597 +932,398 @@
             { id: 8, name: '陈峥嵘', date: '0115', distance: 1, unit: 'km', note: 'w1' },
             { id: 9, name: '徐岚', date: '0116', distance: 7, unit: 'km' },
             { id: 10, name: '方文', date: '0116', distance: 5, unit: 'km' },
-            { id: 11, name: '马文雅', date: '0117', distance: 2, unit: 'km' },
-            { id: 12, name: 'chuchu', date: '0117', distance: 4.5, unit: 'km' },
-            { id: 13, name: '徐岚', date: '0117', distance: 10.5, unit: 'km' },
-            { id: 14, name: '梁晨', date: '0117', distance: 2, unit: 'km' },
-            { id: 15, name: '徐岚', date: '0119', distance: 11.5, unit: 'km' },
-            { id: 16, name: '徐岚', date: '0121', distance: 7.37, unit: 'km' },
-            { id: 17, name: '马文雅', date: '0121', distance: 3.7, unit: 'km' },
-            { id: 18, name: '方文', date: '0121', distance: 2, unit: 'km' },
-            { id: 19, name: 'chuchu', date: '0122', distance: 4.47, unit: 'km' },
-            { id: 20, name: '马文雅', date: '0122', distance: 3, unit: 'km' },
-            { id: 21, name: '梁晨', date: '0122', distance: 2, unit: 'km' },
-            { id: 22, name: 'chuchu', date: '0123', distance: 4.55, unit: 'km' },
-            { id: 23, name: '杨靖', date: '0123', distance: 6.75, unit: 'km' },
-            { id: 24, name: '徐岚', date: '0123', distance: 10.14, unit: 'km' },
-            { id: 25, name: '陈峥嵘', date: '0123', distance: 1.5, unit: 'km', note: 'w4' },
-            { id: 26, name: '徐岚', date: '0124', distance: 7.04, unit: 'km' },
-            { id: 27, name: '陈峥嵘', date: '0125', distance: 1, unit: 'km', note: 'w4' },
-            { id: 28, name: '徐岚', date: '0126', distance: 9.2, unit: 'km' },
-            { id: 29, name: '梁晨', date: '0126', distance: 1.79, unit: 'km' },
-            { id: 30, name: '方文', date: '0126', distance: 5, unit: 'km' },
-            { id: 31, name: '陈峥嵘', date: '0128', distance: 1, unit: 'km', note: 'w5' },
-            { id: 32, name: '徐岚', date: '0128', distance: 6.87, unit: 'km' },
-            { id: 33, name: '陈峥嵘', date: '0129', distance: 1, unit: 'km', note: 'w5' },
-            { id: 34, name: '梁晨', date: '0129', distance: 1.5, unit: 'km' },
-            { id: 35, name: 'chuchu', date: '0130', distance: 3.38, unit: 'km' },
-            { id: 36, name: '徐岚', date: '0130', distance: 7.19, unit: 'km' },
-            { id: 37, name: '徐岚', date: '0131', distance: 6.77, unit: 'km' },
-            // 2月数据
-            { id: 38, name: '方文', date: '0201', distance: 6, unit: 'km' },
-            { id: 39, name: '陈峥嵘', date: '0201', distance: 1.5, unit: 'km', note: 'w5' },
-            { id: 40, name: '马文雅', date: '0201', distance: 4.17, unit: 'km' },
-            { id: 41, name: '马文雅', date: '0202', distance: 2.31, unit: 'km' },
-            { id: 42, name: '杨靖', date: '0202', distance: 6, unit: 'km' },
-            { id: 43, name: '徐岚', date: '0202', distance: 7.6, unit: 'km' },
-            { id: 44, name: '梁晨', date: '0202', distance: 1.75, unit: 'km' },
-            { id: 45, name: '陈峥嵘', date: '0202', distance: 3, unit: 'km', note: 'w5' },
-            { id: 46, name: '徐岚', date: '0204', distance: 9.55, unit: 'km' },
-            { id: 47, name: 'chuchu', date: '0205', distance: 3.49, unit: 'km' },
-            { id: 48, name: '徐岚', date: '0206', distance: 6.77, unit: 'km' },
-            { id: 49, name: '陈峥嵘', date: '0206', distance: 1.5, unit: 'km', note: 'w5' },
-            { id: 50, name: '杨靖', date: '0206', distance: 6, unit: 'km' },
-            { id: 51, name: '徐岚', date: '0207', distance: 7.7, unit: 'km' },
-            { id: 52, name: '梁晨', date: '0207', distance: 2, unit: 'km' },
-            { id: 53, name: '梁晨', date: '0208', distance: 1.4, unit: 'km' },
-            { id: 54, name: '马文雅', date: '0208', distance: 2, unit: 'km' },
-            { id: 55, name: 'chuchu', date: '0209', distance: 4.45, unit: 'km' },
-            { id: 56, name: '徐岚', date: '0209', distance: 12.25, unit: 'km' },
-            { id: 57, name: '方文', date: '0209', distance: 5, unit: 'km' },
-            { id: 58, name: '马文雅', date: '0211', distance: 3, unit: 'km' },
-            { id: 59, name: '徐岚', date: '0211', distance: 11.14, unit: 'km' },
-            { id: 60, name: 'chuchu', date: '0212', distance: 5.12, unit: 'km' },
-            { id: 61, name: '杨靖', date: '0212', distance: 6, unit: 'km' },
-            { id: 62, name: '陈峥嵘', date: '0213', distance: 3, unit: 'km', note: 'w7' },
-            { id: 63, name: '徐岚', date: '0213', distance: 10.06, unit: 'km' },
-            { id: 64, name: '方文', date: '0213', distance: 1.6, unit: 'km' },
-            { id: 65, name: '马文雅', date: '0214', distance: 2.9, unit: 'km' },
-            { id: 66, name: '梁晨', date: '0214', distance: 2.6, unit: 'km' },
-            { id: 67, name: '徐岚', date: '0214', distance: 9, unit: 'km' },
-            { id: 68, name: '陈峥嵘', date: '0214', distance: 3.2, unit: 'km', note: 'w7' },
-            { id: 69, name: '方文', date: '0215', distance: 7, unit: 'km' },
-            { id: 70, name: '马文雅', date: '0215', distance: 4, unit: 'km' },
-            { id: 71, name: '徐岚', date: '0216', distance: 8.66, unit: 'km' },
-            { id: 72, name: '梁晨', date: '0216', distance: 1.5, unit: 'km' },
-            { id: 73, name: '杨靖', date: '0216', distance: 6, unit: 'km' },
-            { id: 74, name: '陈峥嵘', date: '0216', distance: 5, unit: 'km', note: 'w7' },
-            { id: 75, name: '张媛媛', date: '0216', distance: 3.02, unit: 'km' },
-            { id: 76, name: '陈德琴', date: '0214', distance: 3.18, unit: 'km' },
-            { id: 77, name: 'chuchu', date: '0217', distance: 4.36, unit: 'km' },
-            { id: 78, name: '陈德琴', date: '0215', distance: 1.3, unit: 'km' },
-            { id: 79, name: '陈德琴', date: '0216', distance: 2.33, unit: 'km' },
-            { id: 80, name: '徐岚', date: '0218', distance: 10.59, unit: 'km' },
-            { id: 81, name: '陈德琴', date: '0217', distance: 2.18, unit: 'km' },
-            { id: 82, name: '方文', date: '0218', distance: 5, unit: 'km' },
-            { id: 83, name: '陈德琴', date: '0219', distance: 3.25, unit: 'km' },
-            { id: 84, name: 'chuchu', date: '0219', distance: 5, unit: 'km' },
-            { id: 85, name: '陈峥嵘', date: '0219', distance: 3, unit: 'km', note: 'w8' },
-            { id: 86, name: '杨靖', date: '0219', distance: 6, unit: 'km' },
-            { id: 87, name: '陈德琴', date: '0220', distance: 4.09, unit: 'km' },
-            { id: 88, name: '陈峥嵘', date: '0220', distance: 3, unit: 'km', note: 'w8' },
-            { id: 89, name: '徐岚', date: '0220', distance: 9.52, unit: 'km' },
-            { id: 90, name: '方文', date: '0220', distance: 2, unit: 'km' },
-            { id: 91, name: '马文雅', date: '0221', distance: 2, unit: 'km' },
-            { id: 92, name: '徐岚', date: '0221', distance: 10.10, unit: 'km' },
-            { id: 93, name: '方文', date: '0222', distance: 8, unit: 'km' },
-            { id: 94, name: '马文雅', date: '0222', distance: 5, unit: 'km' },
-            { id: 95, name: '张媛媛', date: '0222', distance: 4.08, unit: 'km' },
-            { id: 96, name: '梁晨', date: '0223', distance: 3, unit: 'km' },
-            { id: 97, name: 'chuchu', date: '0224', distance: 5.26, unit: 'km' },
-            { id: 98, name: '徐岚', date: '0223', distance: 13.06, unit: 'km' },
-            { id: 99, name: '徐岚', date: '0225', distance: 7.5, unit: 'km' },
-            { id: 100, name: '马文雅', date: '0225', distance: 3, unit: 'km' },
-            { id: 101, name: '陈德琴', date: '0225', distance: 4.12, unit: 'km' },
-            { id: 102, name: '方文', date: '0225', distance: 5, unit: 'km' },
-            { id: 103, name: 'chuchu', date: '0226', distance: 6.30, unit: 'km' },
-            { id: 104, name: '梁晨', date: '0226', distance: 2, unit: 'km' },
-            { id: 105, name: '徐岚', date: '0227', distance: 9.34, unit: 'km' },
-            { id: 106, name: '杨靖', date: '0227', distance: 6, unit: 'km' },
-            { id: 107, name: '马文雅', date: '0227', distance: 3, unit: 'km' },
-            { id: 108, name: '陈德琴', date: '0227', distance: 3, unit: 'km' },
-            { id: 109, name: '方文', date: '0227', distance: 2, unit: 'km' },
-            { id: 110, name: 'chuchu', date: '0228', distance: 4.38, unit: 'km' },
-            { id: 111, name: '陈德琴', date: '0228', distance: 2.37, unit: 'km' },
-            { id: 112, name: '徐岚', date: '0228', distance: 10.38, unit: 'km' },
-            // 3月数据
-            { id: 113, name: '张媛媛', date: '0301', distance: 3.11, unit: 'km' },
-            { id: 114, name: '陈德琴', date: '0301', distance: 5.29, unit: 'km' },
-            { id: 115, name: '陈峥嵘', date: '0301', distance: 3.91, unit: 'km' },
-            { id: 116, name: '方文', date: '0301', distance: 12, unit: 'km' },
-            { id: 117, name: '马文雅', date: '0301', distance: 2.2, unit: 'km' },
-            { id: 118, name: '徐岚', date: '0302', distance: 14, unit: 'km' },
-            { id: 119, name: '梁晨', date: '0302', distance: 2, unit: 'km' },
-            { id: 120, name: '陈德琴', date: '0303', distance: 3.17, unit: 'km' },
-            { id: 121, name: '方文', date: '0304', distance: 5, unit: 'km' },
-            { id: 122, name: 'chuchu', date: '0304', distance: 5, unit: 'km' },
-            { id: 123, name: '徐岚', date: '0304', distance: 7.38, unit: 'km' },
-            { id: 124, name: '陈德琴', date: '0305', distance: 4, unit: 'km' },
-            { id: 125, name: '马文雅', date: '0306', distance: 2, unit: 'km' },
-            { id: 126, name: '徐岚', date: '0306', distance: 12.1, unit: 'km' },
-            { id: 127, name: '方文', date: '0306', distance: 1.4, unit: 'km' },
-            { id: 128, name: '徐岚', date: '0307', distance: 8.24, unit: 'km' },
-            { id: 129, name: '马文雅', date: '0307', distance: 3.18, unit: 'km' },
-            { id: 130, name: '张媛媛', date: '0307', distance: 5.10, unit: 'km' },
-            { id: 131, name: '陈德琴', date: '0307', distance: 5, unit: 'km' },
-            { id: 132, name: '方文', date: '0307', distance: 10, unit: 'km' },
-            { id: 133, name: '陈峥嵘', date: '0307', distance: 3, unit: 'km', note: 'w10' },
-            { id: 134, name: '陈德琴', date: '0309', distance: 5.18, unit: 'km' },
-            { id: 135, name: '梁晨', date: '0309', distance: 3, unit: 'km' },
-            { id: 136, name: '徐岚', date: '0309', distance: 12.3, unit: 'km' },
-            { id: 137, name: '杨靖', date: '0309', distance: 6, unit: 'km' },
-            { id: 138, name: 'chuchu', date: '0310', distance: 3.5, unit: 'km' },
-            { id: 139, name: '陈峥嵘', date: '0310', distance: 3, unit: 'km', note: 'w11' },
-            { id: 140, name: '方文', date: '0311', distance: 5, unit: 'km' },
-            { id: 141, name: '徐岚', date: '0312', distance: 8.77, unit: 'km' },
-            { id: 142, name: '陈德琴', date: '0312', distance: 3.16, unit: 'km' },
-            { id: 143, name: '马文雅', date: '0312', distance: 2, unit: 'km' },
-            { id: 144, name: '陈德琴', date: '0313', distance: 2.32, unit: 'km' },
-            { id: 145, name: '徐岚', date: '0313', distance: 11.24, unit: 'km' },
-            { id: 146, name: '徐岚', date: '0314', distance: 8, unit: 'km' },
-            { id: 147, name: '陈德琴', date: '0314', distance: 2.31, unit: 'km' },
-            { id: 148, name: '方文', date: '0315', distance: 12, unit: 'km' },
-            { id: 149, name: '徐岚', date: '0316', distance: 16.2, unit: 'km' },
-            { id: 150, name: '杨靖', date: '0316', distance: 6, unit: 'km' },
-            { id: 151, name: '梁晨', date: '0316', distance: 3, unit: 'km' },
-            { id: 152, name: '张媛媛', date: '0316', distance: 5.54, unit: 'km' },
-            { id: 153, name: '陈峥嵘', date: '0317', distance: 3, unit: 'km', note: 'w12' },
-            { id: 154, name: '马文雅', date: '0316', distance: 7.4, unit: 'km' },
-            { id: 155, name: '徐岚', date: '0318', distance: 8, unit: 'km' },
-            { id: 156, name: '方文', date: '0318', distance: 5, unit: 'km' },
-            { id: 157, name: '马文雅', date: '0320', distance: 2, unit: 'km' },
-            { id: 158, name: '徐岚', date: '0320', distance: 11.4, unit: 'km' },
-            { id: 159, name: '陈德琴', date: '0320', distance: 3.28, unit: 'km' },
-            { id: 160, name: '张媛媛', date: '0321', distance: 3.31, unit: 'km' },
-            { id: 161, name: '徐岚', date: '0321', distance: 7.9, unit: 'km' },
-            { id: 162, name: '马文雅', date: '0321', distance: 2, unit: 'km' },
-            { id: 163, name: '方文', date: '0322', distance: 10, unit: 'km' },
-            { id: 164, name: '徐岚', date: '0323', distance: 14, unit: 'km' },
-            { id: 165, name: '梁晨', date: '0323', distance: 3.6, unit: 'km' },
-            { id: 166, name: '马文雅', date: '0323', distance: 6.11, unit: 'km' },
-            { id: 167, name: '陈德琴', date: '0324', distance: 4.31, unit: 'km' },
-            { id: 168, name: '陈峥嵘', date: '0324', distance: 3, unit: 'km', note: 'w13' },
-            { id: 169, name: '陈德琴', date: '0325', distance: 3.2, unit: 'km' },
-            { id: 170, name: '方文', date: '0325', distance: 5, unit: 'km' },
-            { id: 171, name: '徐岚', date: '0325', distance: 8, unit: 'km' },
-            { id: 172, name: '陈峥嵘', date: '0325', distance: 3, unit: 'km', note: 'w13' },
-            { id: 173, name: 'chuchu', date: '0326', distance: 3.48, unit: 'km' },
-            { id: 174, name: '徐岚', date: '0327', distance: 10.8, unit: 'km' },
-            { id: 175, name: '方文', date: '0327', distance: 2, unit: 'km' },
-            { id: 176, name: '徐岚', date: '0328', distance: 8.3, unit: 'km' },
-            { id: 177, name: 'chuchu', date: '0328', distance: 4.24, unit: 'km' },
-            { id: 178, name: '陈德琴', date: '0328', distance: 3.46, unit: 'km' },
-            { id: 179, name: '方文', date: '0329', distance: 15, unit: 'km' },
-            { id: 180, name: '马文雅', date: '0329', distance: 5.45, unit: 'km' },
-            { id: 181, name: '张媛媛', date: '0329', distance: 6.28, unit: 'km' },
-            { id: 182, name: '陈德琴', date: '0329', distance: 2.74, unit: 'km' },
-            { id: 183, name: '史孟丽', date: '0329', distance: 3.57, unit: 'km' },
-            { id: 184, name: '徐岚', date: '0330', distance: 9, unit: 'km' },
-            { id: 185, name: '杨靖', date: '0330', distance: 6.27, unit: 'km' },
-            { id: 186, name: '梁晨', date: '0330', distance: 3, unit: 'km' },
-            // 4月数据
-            { id: 187, name: '徐岚', date: '0401', distance: 11.21, unit: 'km' },
-            { id: 188, name: '方文', date: '0401', distance: 5, unit: 'km' },
-            { id: 189, name: '陈峥嵘', date: '0401', distance: 3, unit: 'km' },
-            { id: 190, name: 'chuchu', date: '0402', distance: 5.34, unit: 'km' },
-            { id: 191, name: '史孟丽', date: '0401', distance: 3.16, unit: 'km' },
-            { id: 192, name: '陈德琴', date: '0402', distance: 3, unit: 'km' },
-            { id: 193, name: '史孟丽', date: '0401', distance: 3.1, unit: 'km' },
-            { id: 194, name: 'chuchu', date: '0403', distance: 4.19, unit: 'km' },
-            { id: 195, name: '杨靖', date: '0403', distance: 7.5, unit: 'km' },
-            { id: 196, name: '马文雅', date: '0404', distance: 6.4, unit: 'km' },
-            { id: 197, name: '陈德琴', date: '0404', distance: 8.93, unit: 'km' },
-            { id: 198, name: '徐岚', date: '0404', distance: 6, unit: 'km' },
-            { id: 199, name: 'chuchu', date: '0405', distance: 3.25, unit: 'km' },
-            { id: 200, name: '梁晨', date: '0406', distance: 3, unit: 'km' },
-            { id: 201, name: '陈德琴', date: '0406', distance: 8, unit: 'km' },
-            { id: 202, name: '徐岚', date: '0406', distance: 12, unit: 'km' },
-            { id: 203, name: '杨靖', date: '0406', distance: 5, unit: 'km' },
-            { id: 204, name: '方文', date: '0406', distance: 5, unit: 'km' },
-            { id: 205, name: '张媛媛', date: '0406', distance: 3.53, unit: 'km' },
-            { id: 206, name: '史孟丽', date: '0406', distance: 3.14, unit: 'km' },
-            { id: 207, name: 'chuchu', date: '0407', distance: 4.19, unit: 'km' },
-            { id: 208, name: '徐岚', date: '0408', distance: 11.54, unit: 'km' },
-            { id: 209, name: '徐岚', date: '0403', distance: 7.13, unit: 'km' },
-            { id: 210, name: 'chuchu', date: '0409', distance: 6, unit: 'km' },
-            { id: 211, name: '陈德琴', date: '0410', distance: 3.12, unit: 'km' },
-            { id: 212, name: '徐岚', date: '0410', distance: 12.59, unit: 'km' },
-            { id: 213, name: '方文', date: '0410', distance: 10, unit: 'km' },
-            { id: 214, name: '徐岚', date: '0411', distance: 6.4, unit: 'km' },
-            { id: 215, name: 'chuchu', date: '0411', distance: 6, unit: 'km' },
-            { id: 216, name: '马文雅', date: '0411', distance: 3, unit: 'km' },
-            { id: 217, name: '马文雅', date: '0412', distance: 3, unit: 'km' },
-            { id: 218, name: '陈峥嵘', date: '0413', distance: 3, unit: 'km', note: 'w15' },
-            { id: 219, name: '徐岚', date: '0413', distance: 14.7, unit: 'km' },
-            { id: 220, name: '杨靖', date: '0413', distance: 6, unit: 'km' },
-            { id: 221, name: '史孟丽', date: '0413', distance: 3.14, unit: 'km' },
-            { id: 222, name: '张媛媛', date: '0413', distance: 3.28, unit: 'km' },
-            { id: 223, name: 'chuchu', date: '0415', distance: 4.67, unit: 'km' },
-            { id: 224, name: '徐岚', date: '0415', distance: 10.5, unit: 'km' },
-            { id: 225, name: '史孟丽', date: '0416', distance: 2.2, unit: 'km' },
-            { id: 226, name: '方文', date: '0416', distance: 5, unit: 'km' },
-            { id: 227, name: '徐岚', date: '0417', distance: 7, unit: 'km' },
-            { id: 228, name: '陈德琴', date: '0417', distance: 4, unit: 'km' },
-            { id: 229, name: '杨靖', date: '0418', distance: 7, unit: 'km' },
-            { id: 230, name: 'chuchu', date: '0418', distance: 4.7, unit: 'km' },
-            { id: 231, name: '徐岚', date: '0418', distance: 8, unit: 'km' },
-            { id: 232, name: '陈峥嵘', date: '0419', distance: 3, unit: 'km', note: 'w16' },
-            { id: 233, name: '方文', date: '0419', distance: 11, unit: 'km' },
-            { id: 234, name: '史孟丽', date: '0420', distance: 3.09, unit: 'km' },
-            { id: 235, name: '张媛媛', date: '0420', distance: 3.62, unit: 'km' },
-            { id: 236, name: '徐岚', date: '0420', distance: 26, unit: 'km' },
-            { id: 237, name: '梁晨', date: '0420', distance: 3, unit: 'km' },
-            { id: 238, name: 'chuchu', date: '0421', distance: 5.39, unit: 'km' },
-            { id: 239, name: '徐岚', date: '0422', distance: 6.7, unit: 'km' },
-            { id: 240, name: 'chuchu', date: '0423', distance: 7.05, unit: 'km' },
-            { id: 241, name: '陈德琴', date: '0423', distance: 3.27, unit: 'km' },
-            { id: 242, name: '史孟丽', date: '0424', distance: 3.03, unit: 'km' },
-            { id: 243, name: '徐岚', date: '0424', distance: 11.38, unit: 'km' },
-            { id: 244, name: '陈峥嵘', date: '0424', distance: 4, unit: 'km', note: 'w17' },
-            { id: 245, name: 'chuchu', date: '0425', distance: 5.3, unit: 'km' },
-            { id: 246, name: '徐岚', date: '0425', distance: 10.73, unit: 'km' },
-            { id: 247, name: '张媛媛', date: '0426', distance: 3.62, unit: 'km' },
-            { id: 248, name: '方文', date: '0426', distance: 15, unit: 'km' },
-            { id: 249, name: '杨靖', date: '0426', distance: 6, unit: 'km' },
-            { id: 250, name: '史孟丽', date: '0426', distance: 4, unit: 'km' },
-            { id: 251, name: '梁晨', date: '0426', distance: 3.7, unit: 'km' },
-            { id: 252, name: '徐岚', date: '0427', distance: 8.9, unit: 'km' },
-            { id: 253, name: '马文雅', date: '0427', distance: 3.67, unit: 'km' },
-            { id: 254, name: '徐岚', date: '0429', distance: 6.38, unit: 'km' },
-            { id: 255, name: '陈峥嵘', date: '0429', distance: 3, unit: 'km', note: 'w18' },
-            { id: 256, name: '方文', date: '0429', distance: 5, unit: 'km' },
-            // 5月数据
-            { id: 257, name: '徐岚', date: '0501', distance: 10.83, unit: 'km' },
-            { id: 258, name: '徐岚', date: '0502', distance: 6.39, unit: 'km' },
-            { id: 259, name: '史孟丽', date: '0501', distance: 3, unit: 'km' },
-            { id: 260, name: '梁晨', date: '0502', distance: 3, unit: 'km' },
-            { id: 261, name: '史孟丽', date: '0502', distance: 2, unit: 'km' },
-            { id: 262, name: '张媛媛', date: '0504', distance: 4.08, unit: 'km' },
-            { id: 263, name: '徐岚', date: '0504', distance: 11.4, unit: 'km' },
-            { id: 264, name: '杨靖', date: '0504', distance: 6, unit: 'km' },
-            { id: 265, name: '马文雅', date: '0504', distance: 3.6, unit: 'km' },
-            { id: 266, name: '陈德琴', date: '0505', distance: 3.12, unit: 'km' },
-            { id: 267, name: 'chuchu', date: '0507', distance: 4.75, unit: 'km' },
-            { id: 268, name: '陈峥嵘', date: '0507', distance: 3, unit: 'km', note: 'w19' },
-            { id: 269, name: '方文', date: '0507', distance: 5, unit: 'km' },
-            { id: 270, name: '徐岚', date: '0508', distance: 7.26, unit: 'km' },
-            { id: 271, name: '徐岚', date: '0509', distance: 3, unit: 'km' },
-            { id: 272, name: 'chuchu', date: '0510', distance: 5, unit: 'km' },
-            { id: 273, name: '方文', date: '0510', distance: 6, unit: 'km' },
-            { id: 274, name: '杨靖', date: '0510', distance: 10, unit: 'km' },
-            { id: 275, name: '陈德琴', date: '0511', distance: 5.2, unit: 'km' },
-            { id: 276, name: '张媛媛', date: '0511', distance: 6.57, unit: 'km' },
-            { id: 277, name: '史孟丽', date: '0511', distance: 3, unit: 'km' },
-            { id: 278, name: '马文雅', date: '0511', distance: 3, unit: 'km' },
-            { id: 279, name: '梁晨', date: '0511', distance: 3, unit: 'km' },
-            { id: 280, name: 'chuchu', date: '0512', distance: 4.89, unit: 'km' },
-            { id: 281, name: '陈德琴', date: '0513', distance: 4.26, unit: 'km' },
-            { id: 282, name: '徐岚', date: '0511', distance: 42.55, unit: 'km' },
-            { id: 283, name: '徐岚', date: '0513', distance: 3, unit: 'km' },
-            { id: 284, name: '方文', date: '0513', distance: 5, unit: 'km' },
-            { id: 285, name: '徐岚', date: '0515', distance: 5.78, unit: 'km' },
-            { id: 286, name: 'chuchu', date: '0516', distance: 3.20, unit: 'km' },
-            { id: 287, name: '张媛媛', date: '0517', distance: 4.27, unit: 'km' },
-            { id: 288, name: '陈峥嵘', date: '0517', distance: 3, unit: 'km', note: 'w20' },
-            { id: 289, name: '陈德琴', date: '0518', distance: 10.16, unit: 'km' },
-            { id: 290, name: '史孟丽', date: '0518', distance: 6, unit: 'km' },
-            { id: 291, name: '杨靖', date: '0518', distance: 6, unit: 'km' },
-            { id: 292, name: '方文', date: '0518', distance: 10, unit: 'km' },
-            { id: 293, name: '马文雅', date: '0518', distance: 3.36, unit: 'km' },
-            { id: 294, name: '梁晨', date: '0518', distance: 3, unit: 'km' },
-            { id: 295, name: '徐岚', date: '0518', distance: 8.1, unit: 'km' },
-            { id: 296, name: '陈峥嵘', date: '0522', distance: 3, unit: 'km', note: 'w21' },
-            { id: 297, name: '徐岚', date: '0522', distance: 3, unit: 'km' },
-            { id: 298, name: '张媛媛', date: '0523', distance: 3, unit: 'km' },
-            { id: 299, name: '陈德琴', date: '0523', distance: 12, unit: 'km' },
-            { id: 300, name: '方文', date: '0521', distance: 5, unit: 'km' },
-            { id: 301, name: '陈德琴', date: '0525', distance: 3.12, unit: 'km' },
-            { id: 302, name: 'chuchu', date: '0526', distance: 3.18, unit: 'km' },
-            { id: 303, name: '方文', date: '0528', distance: 5, unit: 'km' },
-            { id: 304, name: '陈峥嵘', date: '0529', distance: 3, unit: 'km', note: 'w22' },
-            { id: 305, name: '陈德琴', date: '0529', distance: 4.24, unit: 'km' },
-            { id: 306, name: '徐岚', date: '0530', distance: 3, unit: 'km' },
-            { id: 307, name: 'chuchu', date: '0530', distance: 4.82, unit: 'km' },
-            { id: 308, name: '方文', date: '0531', distance: 13, unit: 'km' },
-            { id: 309, name: '杨靖', date: '0531', distance: 6, unit: 'km' },
-            { id: 310, name: '安迪', date: '0531', distance: 3, unit: 'km' },
-            { id: 311, name: '徐岚', date: '0524', distance: 5, unit: 'km' },
-            // 6月数据
-            { id: 312, name: '张媛媛', date: '0601', distance: 3.21, unit: 'km' },
-            { id: 313, name: '徐岚', date: '0601', distance: 8.33, unit: 'km' },
-            { id: 314, name: '陈德琴', date: '0602', distance: 7.58, unit: 'km' },
-            { id: 315, name: '徐岚', date: '0603', distance: 6.27, unit: 'km' },
-            { id: 316, name: '方文', date: '0603', distance: 5, unit: 'km' },
-            { id: 317, name: 'chuchu', date: '0604', distance: 4.14, unit: 'km' },
-            { id: 318, name: '徐岚', date: '0605', distance: 5.58, unit: 'km' },
-            { id: 319, name: 'chuchu', date: '0606', distance: 5, unit: 'km' },
-            { id: 320, name: '陈德琴', date: '0606', distance: 4.27, unit: 'km' },
-            { id: 321, name: '徐岚', date: '0606', distance: 6.5, unit: 'km' },
-            { id: 322, name: '安迪', date: '0607', distance: 3.12, unit: 'km' },
-            { id: 323, name: '史孟丽', date: '0601', distance: 4.3, unit: 'km' },
-            { id: 324, name: '史孟丽', date: '0607', distance: 5.4, unit: 'km' },
-            { id: 325, name: '徐岚', date: '0608', distance: 12.68, unit: 'km' },
-            { id: 326, name: '陈峥嵘', date: '0608', distance: 3, unit: 'km', note: 'w23' },
-            { id: 327, name: '杨靖', date: '0608', distance: 6, unit: 'km' },
-            { id: 328, name: '梁晨', date: '0608', distance: 4, unit: 'km' },
-            { id: 329, name: '马文雅', date: '0608', distance: 5.5, unit: 'km' },
-            { id: 330, name: '方文', date: '0609', distance: 5, unit: 'km' },
-            { id: 331, name: '陈德琴', date: '0610', distance: 5.25, unit: 'km' },
-            { id: 332, name: '徐岚', date: '0610', distance: 6.66, unit: 'km' },
-            { id: 333, name: '张媛媛', date: '0612', distance: 3.22, unit: 'km' },
-            { id: 334, name: '徐岚', date: '0612', distance: 7.27, unit: 'km' },
-            { id: 335, name: '徐岚', date: '0613', distance: 7.35, unit: 'km' },
-            { id: 336, name: '史孟丽', date: '0614', distance: 3.12, unit: 'km' },
-            { id: 337, name: '张媛媛', date: '0614', distance: 7.2, unit: 'km' },
-            { id: 338, name: '安迪', date: '0615', distance: 3.2, unit: 'km' },
-            { id: 339, name: '马文雅', date: '0615', distance: 4.1, unit: 'km' },
-            { id: 340, name: '梁晨', date: '0615', distance: 4, unit: 'km' },
-            { id: 341, name: '杨靖', date: '0615', distance: 6.4, unit: 'km' },
-            { id: 342, name: '陈峥嵘', date: '0615', distance: 3, unit: 'km', note: 'w24' },
-            { id: 343, name: '徐岚', date: '0616', distance: 6.35, unit: 'km' },
-            { id: 344, name: '徐岚', date: '0617', distance: 6.4, unit: 'km' },
-            { id: 345, name: '史孟丽', date: '0618', distance: 3.27, unit: 'km' },
-            { id: 346, name: '徐岚', date: '0619', distance: 8.1, unit: 'km' },
-            { id: 347, name: '陈德琴', date: '0619', distance: 5.33, unit: 'km' },
-            { id: 348, name: '徐岚', date: '0620', distance: 6.14, unit: 'km' },
-            { id: 349, name: '徐岚', date: '0622', distance: 12.13, unit: 'km' },
-            { id: 350, name: '张媛媛', date: '0622', distance: 5.23, unit: 'km' },
-            { id: 351, name: '陈峥嵘', date: '0622', distance: 2, unit: 'km', note: 'w25' },
-            { id: 352, name: '杨靖', date: '0622', distance: 6, unit: 'km' },
-            { id: 353, name: '方文', date: '0622', distance: 5, unit: 'km' },
-            { id: 354, name: '安迪', date: '0622', distance: 3, unit: 'km', note: '+舞蹈2h' },
-            { id: 355, name: '梁晨', date: '0622', distance: 4.3, unit: 'km' },
-            { id: 356, name: '马文雅', date: '0622', distance: 4.47, unit: 'km' },
-            { id: 357, name: '陈德琴', date: '0623', distance: 5.14, unit: 'km' },
-            { id: 358, name: 'chuchu', date: '0624', distance: 4.3, unit: 'km' },
-            { id: 359, name: '徐岚', date: '0624', distance: 8, unit: 'km' },
-            { id: 360, name: '方文', date: '0624', distance: 5, unit: 'km' },
-            { id: 361, name: '史孟丽', date: '0624', distance: 3, unit: 'km' },
-            { id: 362, name: '陈德琴', date: '0626', distance: 3.4, unit: 'km' },
-            { id: 363, name: 'chuchu', date: '0626', distance: 5.09, unit: 'km' },
-            { id: 364, name: '徐岚', date: '0626', distance: 8.17, unit: 'km' },
-            { id: 365, name: '徐岚', date: '0627', distance: 8.09, unit: 'km' },
-            { id: 366, name: '方文', date: '0627', distance: 10, unit: 'km' },
-            { id: 367, name: '张媛媛', date: '0628', distance: 8, unit: 'km' },
-            { id: 368, name: '陈德琴', date: '0628', distance: 10.41, unit: 'km' },
-            { id: 369, name: '梁晨', date: '0628', distance: 2, unit: 'km' },
-            { id: 370, name: '徐岚', date: '0629', distance: 11.07, unit: 'km' },
-            { id: 371, name: '陈峥嵘', date: '0629', distance: 4, unit: 'km', note: 'w26' },
-            { id: 372, name: '安迪', date: '0628', distance: 0, unit: 'km', note: '舞蹈2h' },
-            { id: 373, name: '安迪', date: '0629', distance: 0, unit: 'km', note: '舞蹈2h' },
-            { id: 374, name: '李文涛', date: '0629', distance: 7.25, unit: 'km' },
-            { id: 375, name: '梁晨', date: '0629', distance: 4, unit: 'km' },
-            { id: 376, name: '马文雅', date: '0629', distance: 4, unit: 'km' },
-            { id: 377, name: 'chuchu', date: '0630', distance: 4, unit: 'km' },
-            // 7月数据
-            { id: 378, name: '徐岚', date: '0701', distance: 5.56, unit: 'km' },
-            { id: 379, name: '李文涛', date: '0702', distance: 6, unit: 'km' },
-            { id: 380, name: '陈德琴', date: '0703', distance: 2, unit: 'km' },
-            { id: 381, name: '徐岚', date: '0703', distance: 6.5, unit: 'km' },
-            { id: 382, name: '方文', date: '0705', distance: 5, unit: 'km' },
-            { id: 383, name: '陈峥嵘', date: '0705', distance: 2.4, unit: 'km', note: 'w27' },
-            { id: 384, name: '陈德琴', date: '0706', distance: 6.14, unit: 'km' },
-            { id: 385, name: '徐岚', date: '0706', distance: 12.5, unit: 'km' },
-            { id: 386, name: '安迪', date: '0705', distance: 0, unit: 'km', note: '舞蹈2h' },
-            { id: 387, name: '安迪', date: '0706', distance: 4, unit: 'km' },
-            { id: 388, name: '张媛媛', date: '0706', distance: 4.15, unit: 'km' },
-            { id: 389, name: '杨靖', date: '0706', distance: 6, unit: 'km' },
-            { id: 390, name: '梁晨', date: '0705', distance: 2, unit: 'km' },
-            { id: 391, name: '梁晨', date: '0706', distance: 3, unit: 'km' },
-            { id: 392, name: '马文雅', date: '0706', distance: 4, unit: 'km' },
-            { id: 393, name: '徐岚', date: '0707', distance: 6, unit: 'km' },
-            { id: 394, name: '陈峥嵘', date: '0709', distance: 4, unit: 'km', note: 'w28' },
-            { id: 395, name: '徐岚', date: '0712', distance: 5.2, unit: 'km' },
-            { id: 396, name: '方文', date: '0712', distance: 10, unit: 'km' },
-            { id: 397, name: '史孟丽', date: '0712', distance: 4, unit: 'km' },
-            { id: 398, name: '陈德琴', date: '0712', distance: 6, unit: 'km' },
-            { id: 399, name: '李文涛', date: '0712', distance: 4, unit: 'km' },
-            { id: 400, name: '徐岚', date: '0713', distance: 11, unit: 'km' },
-            { id: 401, name: '张媛媛', date: '0713', distance: 4.05, unit: 'km' },
-            { id: 402, name: '梁晨', date: '0713', distance: 4.2, unit: 'km' },
-            { id: 403, name: '史孟丽', date: '0714', distance: 4, unit: 'km' },
-            { id: 404, name: 'chuchu', date: '0716', distance: 4.30, unit: 'km' },
-            { id: 405, name: '徐岚', date: '0716', distance: 5, unit: 'km' },
-            { id: 406, name: '徐岚', date: '0718', distance: 5.09, unit: 'km' },
-            { id: 407, name: '张媛媛', date: '0718', distance: 4.29, unit: 'km' },
-            { id: 408, name: '陈德琴', date: '0720', distance: 4.1, unit: 'km' },
-            { id: 409, name: '安迪', date: '0720', distance: 4.1, unit: 'km' },
-            { id: 410, name: '安迪', date: '0719', distance: 0, unit: 'km', note: '跳舞2h' },
-            { id: 411, name: '梁晨', date: '0719', distance: 2.5, unit: 'km' },
-            { id: 412, name: '徐岚', date: '0720', distance: 10, unit: 'km' },
-            { id: 413, name: '陈德琴', date: '0722', distance: 5.29, unit: 'km' },
-            { id: 414, name: '徐岚', date: '0722', distance: 5.36, unit: 'km' },
-            { id: 415, name: '李文涛', date: '0722', distance: 5.72, unit: 'km' },
-            { id: 416, name: '方文', date: '0723', distance: 5, unit: 'km' },
-            { id: 417, name: '徐岚', date: '0724', distance: 5.4, unit: 'km' },
-            { id: 418, name: '陈德琴', date: '0726', distance: 5.4, unit: 'km' },
-            { id: 419, name: '梁晨', date: '0726', distance: 4.2, unit: 'km' },
-            { id: 420, name: '陈德琴', date: '0727', distance: 6.26, unit: 'km' },
-            { id: 421, name: '徐岚', date: '0727', distance: 10, unit: 'km' },
-            { id: 422, name: '陈峥嵘', date: '0727', distance: 4, unit: 'km', note: 'w30' },
-            { id: 423, name: '安迪', date: '0727', distance: 4.04, unit: 'km' },
-            { id: 424, name: '杨靖', date: '0727', distance: 6, unit: 'km' },
-            { id: 425, name: '徐岚', date: '0730', distance: 6, unit: 'km' },
-            { id: 426, name: '徐岚', date: '0731', distance: 5, unit: 'km' },
-            { id: 427, name: '徐岚', date: '0704', distance: 5, unit: 'km' },
-            { id: 428, name: '方文', date: '0729', distance: 5, unit: 'km' },
-            { id: 429, name: '张媛媛', date: '0731', distance: 4.09, unit: 'km' },
-            // 8月数据
-            { id: 430, name: '陈德琴', date: '0803', distance: 4.21, unit: 'km' },
-            { id: 431, name: '史孟丽', date: '0804', distance: 4, unit: 'km' },
-            { id: 432, name: '梁晨', date: '0803', distance: 5, unit: 'km' },
-            { id: 433, name: '徐岚', date: '0801', distance: 5, unit: 'km' },
-            { id: 434, name: '徐岚', date: '0803', distance: 10.2, unit: 'km' },
-            { id: 435, name: '徐岚', date: '0805', distance: 5.1, unit: 'km' },
-            { id: 436, name: '徐岚', date: '0807', distance: 5, unit: 'km' },
-            { id: 437, name: '徐岚', date: '0808', distance: 5.38, unit: 'km' },
-            { id: 438, name: '史孟丽', date: '0810', distance: 4, unit: 'km' },
-            { id: 439, name: '徐岚', date: '0810', distance: 10.38, unit: 'km' },
-            { id: 440, name: '方文', date: '0810', distance: 6, unit: 'km' },
-            { id: 441, name: '陈德琴', date: '0810', distance: 5.25, unit: 'km' },
-            { id: 442, name: '李文涛', date: '0810', distance: 4.63, unit: 'km' },
-            { id: 443, name: '杨靖', date: '0810', distance: 6, unit: 'km' },
-            { id: 444, name: '梁晨', date: '0810', distance: 4, unit: 'km' },
-            { id: 445, name: '徐岚', date: '0812', distance: 6.4, unit: 'km' },
-            { id: 446, name: '徐岚', date: '0814', distance: 6, unit: 'km' },
-            { id: 447, name: '李文涛', date: '0816', distance: 5.74, unit: 'km' },
-            { id: 448, name: '徐岚', date: '0815', distance: 5, unit: 'km' },
-            { id: 449, name: '徐岚', date: '0817', distance: 10.47, unit: 'km' },
-            { id: 450, name: '陈德琴', date: '0817', distance: 4.27, unit: 'km' },
-            { id: 451, name: '方文', date: '0815', distance: 4, unit: 'km' },
-            { id: 452, name: '梁晨', date: '0817', distance: 5, unit: 'km' },
-            { id: 453, name: '杨靖', date: '0817', distance: 6, unit: 'km' },
-            { id: 454, name: '徐岚', date: '0819', distance: 5, unit: 'km' },
-            { id: 455, name: '徐岚', date: '0822', distance: 2.5, unit: 'km' },
-            { id: 456, name: '徐岚', date: '0824', distance: 10.10, unit: 'km' },
-            { id: 457, name: '陈德琴', date: '0824', distance: 5.21, unit: 'km' },
-            { id: 458, name: '徐岚', date: '0828', distance: 5, unit: 'km' },
-            { id: 459, name: '徐岚', date: '0829', distance: 5.1, unit: 'km' },
-            { id: 460, name: '梁晨', date: '0831', distance: 4, unit: 'km' },
-            { id: 461, name: '徐岚', date: '0831', distance: 6.6, unit: 'km' },
-            { id: 462, name: '陈峥嵘', date: '0831', distance: 4, unit: 'km', note: 'w35' },
-            // 9月数据
-            { id: 463, name: '徐岚', date: '0903', distance: 5.03, unit: 'km' },
-            { id: 464, name: '徐岚', date: '0904', distance: 5.15, unit: 'km' },
-            { id: 465, name: '方文', date: '0906', distance: 10, unit: 'km' },
-            { id: 466, name: '杨靖', date: '0906', distance: 6, unit: 'km' },
-            { id: 467, name: '陈峥嵘', date: '0906', distance: 4, unit: 'km', note: 'w36' },
-            { id: 468, name: '徐岚', date: '0906', distance: 5, unit: 'km' },
-            { id: 469, name: '史孟丽', date: '0907', distance: 4, unit: 'km' },
-            { id: 470, name: '梁晨', date: '0907', distance: 5, unit: 'km' },
-            { id: 471, name: '陈德琴', date: '0907', distance: 4.29, unit: 'km' },
-            { id: 472, name: '张媛媛', date: '0907', distance: 4.11, unit: 'km' },
-            { id: 473, name: '李文涛', date: '0907', distance: 6, unit: 'km' },
-            { id: 474, name: '徐岚', date: '0909', distance: 5, unit: 'km' },
-            { id: 475, name: '徐岚', date: '0910', distance: 3.2, unit: 'km' },
-            { id: 476, name: '徐岚', date: '0912', distance: 5.2, unit: 'km' },
-            { id: 477, name: '方文', date: '0914', distance: 6, unit: 'km' },
-            { id: 478, name: '徐岚', date: '0914', distance: 10.3, unit: 'km' },
-            { id: 479, name: '李文涛', date: '0914', distance: 4.48, unit: 'km' },
-            { id: 480, name: '安迪', date: '0913', distance: 2.57, unit: 'km', note: '跳舞2h+跑步' },
-            { id: 481, name: '安迪', date: '0914', distance: 0, unit: 'km', note: '跳舞2h' },
-            { id: 482, name: '陈峥嵘', date: '0914', distance: 4, unit: 'km', note: 'w37' },
-            { id: 483, name: '梁晨', date: '0914', distance: 5, unit: 'km' },
-            { id: 484, name: '杨靖', date: '0913', distance: 10, unit: 'km' },
-            { id: 485, name: '徐岚', date: '0918', distance: 6, unit: 'km' },
-            { id: 486, name: '史孟丽', date: '0920', distance: 4, unit: 'km' },
-            { id: 487, name: '徐岚', date: '0920', distance: 5.19, unit: 'km' },
-            { id: 488, name: '李文涛', date: '0921', distance: 5.2, unit: 'km' },
-            { id: 489, name: '李文涛', date: '0925', distance: 5, unit: 'km' },
-            { id: 490, name: '张媛媛', date: '0927', distance: 4.19, unit: 'km' },
-            { id: 491, name: '梁晨', date: '0928', distance: 6, unit: 'km' },
-            { id: 492, name: '方文', date: '0928', distance: 5, unit: 'km' },
-            { id: 493, name: '陈峥嵘', date: '0929', distance: 4, unit: 'km', note: 'w39' },
-            // 10月数据
-            { id: 494, name: '陈德琴', date: '1002', distance: 4.16, unit: 'km' },
-            { id: 495, name: '徐岚', date: '1003', distance: 6.28, unit: 'km' },
-            { id: 496, name: '徐岚', date: '1004', distance: 5.29, unit: 'km' },
-            { id: 497, name: '徐岚', date: '1005', distance: 6.03, unit: 'km' },
-            { id: 498, name: '史孟丽', date: '1006', distance: 4, unit: 'km' },
-            { id: 499, name: '徐岚', date: '1007', distance: 5.21, unit: 'km' },
-            { id: 500, name: '安迪', date: '1004', distance: 0, unit: 'km', note: '跳舞2h' },
-            { id: 501, name: '安迪', date: '1005', distance: 0, unit: 'km', note: '跳舞2h' },
-            { id: 502, name: '安迪', date: '1006', distance: 2.1, unit: 'km' },
-            { id: 503, name: '安迪', date: '1007', distance: 2.15, unit: 'km', note: '跳舞2h+跑步' },
-            { id: 504, name: '徐岚', date: '1010', distance: 5.2, unit: 'km' },
-            { id: 505, name: '陈峥嵘', date: '1011', distance: 4, unit: 'km', note: 'w41' },
-            { id: 506, name: '徐岚', date: '1012', distance: 10.3, unit: 'km' },
-            { id: 507, name: '杨靖', date: '1012', distance: 6, unit: 'km' },
-            { id: 508, name: '梁晨', date: '1012', distance: 5, unit: 'km' },
-            { id: 509, name: '李文涛', date: '1012', distance: 10, unit: 'km' },
-            { id: 510, name: '徐岚', date: '1014', distance: 5, unit: 'km' },
-            { id: 511, name: '李文涛', date: '1014', distance: 5.4, unit: 'km' },
-            { id: 512, name: '陈峥嵘', date: '1015', distance: 3, unit: 'km', note: 'w42' },
-            { id: 513, name: '徐岚', date: '1016', distance: 5, unit: 'km' },
-            { id: 514, name: '李文涛', date: '1015', distance: 2.7, unit: 'km' },
-            { id: 515, name: '李文涛', date: '1017', distance: 5, unit: 'km' },
-            { id: 516, name: '徐岚', date: '1017', distance: 3.5, unit: 'km' },
-            { id: 517, name: '陈峥嵘', date: '1019', distance: 3, unit: 'km', note: 'w42' },
-            { id: 518, name: '史孟丽', date: '1019', distance: 4, unit: 'km' },
-            { id: 519, name: '徐岚', date: '1019', distance: 11, unit: 'km' },
-            { id: 520, name: '杨靖', date: '1019', distance: 6, unit: 'km' },
-            { id: 521, name: '梁晨', date: '1019', distance: 5, unit: 'km' },
-            { id: 522, name: '徐岚', date: '1021', distance: 5.18, unit: 'km' },
-            { id: 523, name: '李文涛', date: '1021', distance: 4, unit: 'km' },
-            { id: 524, name: '徐岚', date: '1023', distance: 5.2, unit: 'km' },
-            { id: 525, name: '张媛媛', date: '1024', distance: 3.3, unit: 'km' },
-            { id: 526, name: '李文涛', date: '1022', distance: 3.59, unit: 'km' },
-            { id: 527, name: '方文', date: '1025', distance: 10, unit: 'km' },
-            { id: 528, name: '史孟丽', date: '1026', distance: 5, unit: 'km' },
-            { id: 529, name: '徐岚', date: '1025', distance: 6, unit: 'km' },
-            { id: 530, name: '徐岚', date: '1026', distance: 10, unit: 'km' },
-            { id: 531, name: '梁晨', date: '1026', distance: 5, unit: 'km' },
-            { id: 532, name: '陈德琴', date: '1028', distance: 4.17, unit: 'km' },
-            { id: 533, name: '李文涛', date: '1029', distance: 4, unit: 'km' },
-            { id: 534, name: '徐岚', date: '1030', distance: 5, unit: 'km' },
-            { id: 535, name: '徐岚', date: '1031', distance: 5.6, unit: 'km' },
-            // 11月数据
-            { id: 536, name: '方文', date: '1101', distance: 5, unit: 'km' },
-            { id: 537, name: '陈德琴', date: '1102', distance: 5, unit: 'km' },
-            { id: 538, name: '徐岚', date: '1102', distance: 10.4, unit: 'km' },
-            { id: 539, name: '陈德琴', date: '1104', distance: 4.2, unit: 'km' },
-            { id: 540, name: '徐岚', date: '1104', distance: 5.15, unit: 'km' },
-            { id: 541, name: '方文', date: '1108', distance: 12, unit: 'km' },
-            { id: 542, name: '梁晨', date: '1102', distance: 5, unit: 'km' },
-            { id: 543, name: '梁晨', date: '1109', distance: 5, unit: 'km' },
-            { id: 544, name: '徐岚', date: '1108', distance: 6, unit: 'km' },
-            { id: 545, name: '徐岚', date: '1111', distance: 6.25, unit: 'km' },
-            { id: 546, name: '徐岚', date: '1113', distance: 5, unit: 'km' },
-            { id: 547, name: '方文', date: '1114', distance: 8, unit: 'km' },
-            { id: 548, name: '徐岚', date: '1115', distance: 6.5, unit: 'km' },
-            { id: 549, name: '陈峥嵘', date: '1108', distance: 3, unit: 'km', note: 'w45' },
-            { id: 550, name: '陈峥嵘', date: '1115', distance: 3, unit: 'km', note: 'w46' },
-            { id: 551, name: '徐岚', date: '1116', distance: 11.17, unit: 'km' },
-            { id: 552, name: '徐岚', date: '1119', distance: 5.15, unit: 'km' },
-            { id: 553, name: '陈德琴', date: '1119', distance: 4.36, unit: 'km' },
-            { id: 554, name: '徐岚', date: '1120', distance: 5, unit: 'km' },
-            { id: 555, name: '梁晨', date: '1123', distance: 5.2, unit: 'km' },
-            { id: 556, name: '徐岚', date: '1123', distance: 10, unit: 'km' },
-            { id: 557, name: 'chuchu', date: '1127', distance: 4.40, unit: 'km', note: '原数据单位错误已修正' },
-            { id: 558, name: '李文涛', date: '1129', distance: 12, unit: 'km' },
-            { id: 559, name: '陈德琴', date: '1130', distance: 5.22, unit: 'km' },
-            { id: 560, name: '李文涛', date: '1130', distance: 8, unit: 'km' },
-            // 12月数据
-            { id: 561, name: '方文', date: '1206', distance: 10, unit: 'km' },
-            { id: 562, name: '徐岚', date: '1203', distance: 3, unit: 'km' },
-            { id: 563, name: '徐岚', date: '1204', distance: 4.2, unit: 'km' },
-            { id: 564, name: '徐岚', date: '1206', distance: 5.67, unit: 'km' },
-            { id: 565, name: '徐岚', date: '1207', distance: 12.93, unit: 'km' },
-            { id: 566, name: '徐岚', date: '1211', distance: 3, unit: 'km' },
-            { id: 567, name: '徐岚', date: '1213', distance: 5.9, unit: 'km' },
-            { id: 568, name: '徐岚', date: '1216', distance: 5, unit: 'km' },
-            { id: 569, name: '陈峥嵘', date: '1204', distance: 3, unit: 'km' },
-            { id: 570, name: '陈峥嵘', date: '1215', distance: 3.6, unit: 'km' }
+            { id: 31, name: '徐岚', date: '0921', distance: 10.18, unit: 'km' },
+            { id: 32, name: '徐岚', date: '0923', distance: 5.07, unit: 'km' },
+            { id: 33, name: '徐岚', date: '0925', distance: 5.02, unit: 'km' },
+            { id: 34, name: '徐岚', date: '0928', distance: 5.08, unit: 'km' },
+            { id: 35, name: '徐岚', date: '0929', distance: 5.32, unit: 'km' }
         ];
 
-        // 图表实例
+        // 实际使用的数据
+        let rawData = [];
+
+        // ============== 初始化 ==============
+        async function initApp() {
+            showLoading('初始化中...');
+
+            // 检查本地存储的配置
+            const savedUrl = localStorage.getItem('supabase_url');
+            const savedKey = localStorage.getItem('supabase_key');
+
+            if (savedUrl && savedKey) {
+                document.getElementById('supabaseUrl').value = savedUrl;
+                document.getElementById('supabaseKey').value = savedKey;
+                await connectToSupabase(savedUrl, savedKey);
+            } else {
+                // 使用本地数据
+                rawData = [...localData];
+                updateConnectionStatus(false);
+            }
+
+            // 渲染页面
+            renderAll();
+            hideLoading();
+        }
+
+        // 连接Supabase
+        async function connectToSupabase(url, key) {
+            try {
+                showLoading('连接数据库...');
+                supabaseClient = supabase.createClient(url, key);
+
+                // 测试连接并获取数据
+                const { data, error } = await supabaseClient
+                    .from('running_records')
+                    .select('*')
+                    .order('id', { ascending: true });
+
+                if (error) throw error;
+
+                rawData = data || [];
+                isConnected = true;
+                updateConnectionStatus(true);
+                console.log('Supabase 连接成功，加载了', rawData.length, '条记录');
+
+            } catch (err) {
+                console.error('Supabase 连接失败:', err);
+                rawData = [...localData];
+                isConnected = false;
+                updateConnectionStatus(false);
+            }
+        }
+
+        // 更新连接状态显示
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+
+            if (connected) {
+                indicator.className = 'status-indicator status-connected';
+                text.textContent = '已连接 Supabase';
+            } else {
+                indicator.className = 'status-indicator status-disconnected';
+                text.textContent = '本地模式';
+            }
+        }
+
+        // 显示/隐藏加载
+        function showLoading(text = '加载中...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        // ============== 配置管理 ==============
+        function openConfigModal() {
+            document.getElementById('configModal').classList.add('active');
+            document.getElementById('configSuccess').style.display = 'none';
+            document.getElementById('configError').style.display = 'none';
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').classList.remove('active');
+        }
+
+        async function saveConfig() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+
+            if (!url || !key) {
+                document.getElementById('configError').textContent = '请填写完整的配置信息';
+                document.getElementById('configError').style.display = 'block';
+                return;
+            }
+
+            localStorage.setItem('supabase_url', url);
+            localStorage.setItem('supabase_key', key);
+
+            await connectToSupabase(url, key);
+
+            if (isConnected) {
+                document.getElementById('configSuccess').style.display = 'block';
+                document.getElementById('configError').style.display = 'none';
+                renderAll();
+                setTimeout(closeConfigModal, 1500);
+            } else {
+                document.getElementById('configError').textContent = '连接失败，请检查配置信息';
+                document.getElementById('configError').style.display = 'block';
+            }
+        }
+
+        function clearConfig() {
+            localStorage.removeItem('supabase_url');
+            localStorage.removeItem('supabase_key');
+            supabaseClient = null;
+            isConnected = false;
+            rawData = [...localData];
+            updateConnectionStatus(false);
+            renderAll();
+            closeConfigModal();
+        }
+
+        // ============== 数据操作 ==============
+        // 添加单条数据
+        async function saveData() {
+            const selectName = document.getElementById('inputName').value;
+            const newName = document.getElementById('inputNewName').value.trim();
+            const dateInput = document.getElementById('inputDate').value;
+            const distance = parseFloat(document.getElementById('inputDistance').value);
+            const note = document.getElementById('inputNote').value.trim();
+
+            const name = newName || selectName;
+            if (!name) {
+                showAddError('请选择或输入姓名');
+                return;
+            }
+            if (!dateInput) {
+                showAddError('请选择日期');
+                return;
+            }
+            if (isNaN(distance) || distance < 0) {
+                showAddError('请输入有效的距离');
+                return;
+            }
+
+            // 转换日期格式
+            const dateParts = dateInput.split('-');
+            const dateCode = dateParts[1] + dateParts[2];
+
+            const newRecord = {
+                name: name,
+                date: dateCode,
+                distance: distance,
+                unit: 'km',
+                note: note || null
+            };
+
+            if (isConnected && supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('running_records')
+                        .insert([newRecord])
+                        .select();
+
+                    if (error) throw error;
+
+                    rawData.push(data[0]);
+                    showAddSuccess();
+                    renderAll();
+
+                } catch (err) {
+                    showAddError('保存失败: ' + err.message);
+                    return;
+                }
+            } else {
+                // 本地模式
+                const maxId = rawData.length > 0 ? Math.max(...rawData.map(r => r.id)) : 0;
+                newRecord.id = maxId + 1;
+                rawData.push(newRecord);
+                showAddSuccess();
+                renderAll();
+            }
+        }
+
+        function showAddSuccess() {
+            document.getElementById('addSuccess').style.display = 'block';
+            document.getElementById('addError').style.display = 'none';
+            // 清空表单
+            document.getElementById('inputNewName').value = '';
+            document.getElementById('inputDistance').value = '';
+            document.getElementById('inputNote').value = '';
+            setTimeout(() => {
+                document.getElementById('addSuccess').style.display = 'none';
+            }, 2000);
+        }
+
+        function showAddError(msg) {
+            document.getElementById('addError').textContent = msg;
+            document.getElementById('addError').style.display = 'block';
+            document.getElementById('addSuccess').style.display = 'none';
+        }
+
+        // ============== 批量导入 ==============
+        let parsedBatchData = [];
+
+        function openBatchImportModal() {
+            document.getElementById('batchImportModal').classList.add('active');
+            document.getElementById('batchInput').value = '';
+            document.getElementById('batchPreview').style.display = 'none';
+            document.getElementById('batchStats').style.display = 'none';
+            document.getElementById('batchImportBtn').disabled = true;
+            document.getElementById('batchSuccess').style.display = 'none';
+            document.getElementById('batchError').style.display = 'none';
+            parsedBatchData = [];
+        }
+
+        function closeBatchImportModal() {
+            document.getElementById('batchImportModal').classList.remove('active');
+        }
+
+        function parseDate(dateStr) {
+            dateStr = dateStr.trim();
+
+            // 格式: MMDD (如 1220)
+            if (/^\d{4}$/.test(dateStr)) {
+                return dateStr;
+            }
+
+            // 格式: MM-DD 或 M-D (如 12-20 或 1-5)
+            let match = dateStr.match(/^(\d{1,2})-(\d{1,2})$/);
+            if (match) {
+                return match[1].padStart(2, '0') + match[2].padStart(2, '0');
+            }
+
+            // 格式: M月D日 (如 12月20日)
+            match = dateStr.match(/^(\d{1,2})月(\d{1,2})日?$/);
+            if (match) {
+                return match[1].padStart(2, '0') + match[2].padStart(2, '0');
+            }
+
+            return null;
+        }
+
+        function parseBatchLine(line) {
+            line = line.trim();
+            if (!line) return null;
+
+            // 支持逗号或多个空格分隔
+            const parts = line.split(/[,，]\s*|\s{2,}/).map(p => p.trim()).filter(p => p);
+
+            if (parts.length < 3) return null;
+
+            const name = parts[0];
+            const date = parseDate(parts[1]);
+            const distance = parseFloat(parts[2]);
+            const note = parts[3] || null;
+
+            if (!name || !date || isNaN(distance)) return null;
+
+            return { name, date, distance, unit: 'km', note };
+        }
+
+        function previewBatchData() {
+            const input = document.getElementById('batchInput').value;
+            const lines = input.split('\n');
+
+            parsedBatchData = [];
+            let validCount = 0;
+            let invalidCount = 0;
+            let previewHtml = '';
+
+            lines.forEach((line, index) => {
+                if (!line.trim()) return;
+
+                const parsed = parseBatchLine(line);
+                if (parsed) {
+                    parsedBatchData.push(parsed);
+                    validCount++;
+                    previewHtml += `<div class="import-preview-item valid">✓ ${parsed.name} | ${formatDate(parsed.date)} | ${parsed.distance}km${parsed.note ? ' | ' + parsed.note : ''}</div>`;
+                } else {
+                    invalidCount++;
+                    previewHtml += `<div class="import-preview-item invalid">✗ 第${index + 1}行格式错误: ${line}</div>`;
+                }
+            });
+
+            document.getElementById('batchPreview').innerHTML = previewHtml || '<div>没有可预览的数据</div>';
+            document.getElementById('batchPreview').style.display = 'block';
+            document.getElementById('batchStats').innerHTML = `<span>有效: ${validCount}条</span><span>无效: ${invalidCount}条</span>`;
+            document.getElementById('batchStats').style.display = 'flex';
+            document.getElementById('batchImportBtn').disabled = validCount === 0;
+        }
+
+        async function executeBatchImport() {
+            if (parsedBatchData.length === 0) return;
+
+            showLoading('正在导入数据...');
+
+            if (isConnected && supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('running_records')
+                        .insert(parsedBatchData)
+                        .select();
+
+                    if (error) throw error;
+
+                    rawData.push(...data);
+                    document.getElementById('batchSuccess').textContent = `成功导入 ${data.length} 条数据!`;
+                    document.getElementById('batchSuccess').style.display = 'block';
+
+                } catch (err) {
+                    document.getElementById('batchError').textContent = '导入失败: ' + err.message;
+                    document.getElementById('batchError').style.display = 'block';
+                    hideLoading();
+                    return;
+                }
+            } else {
+                // 本地模式
+                let maxId = rawData.length > 0 ? Math.max(...rawData.map(r => r.id)) : 0;
+                parsedBatchData.forEach(record => {
+                    record.id = ++maxId;
+                    rawData.push(record);
+                });
+                document.getElementById('batchSuccess').textContent = `成功导入 ${parsedBatchData.length} 条数据!`;
+                document.getElementById('batchSuccess').style.display = 'block';
+            }
+
+            renderAll();
+            hideLoading();
+
+            // 清空并关闭
+            setTimeout(() => {
+                closeBatchImportModal();
+            }, 1500);
+        }
+
+        // ============== 添加数据弹窗 ==============
+        function openAddDataModal() {
+            const modal = document.getElementById('addDataModal');
+            modal.classList.add('active');
+
+            // 填充人员下拉框
+            const select = document.getElementById('inputName');
+            const persons = [...new Set(rawData.map(item => item.name))].sort();
+            select.innerHTML = '<option value="">-- 选择已有成员 --</option>';
+            persons.forEach(person => {
+                select.innerHTML += `<option value="${person}">${person}</option>`;
+            });
+
+            // 设置默认日期为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('inputDate').value = today;
+
+            // 清空其他字段
+            document.getElementById('inputNewName').value = '';
+            document.getElementById('inputDistance').value = '';
+            document.getElementById('inputNote').value = '';
+            document.getElementById('addSuccess').style.display = 'none';
+            document.getElementById('addError').style.display = 'none';
+        }
+
+        function closeAddDataModal() {
+            document.getElementById('addDataModal').classList.remove('active');
+        }
+
+        // ============== 图表和统计 ==============
         let weeklyStackedChart = null;
         let weeklyTrendChart = null;
+        let totalDistanceChart = null;
+        let runCountChart = null;
 
-        // 筛选状态
         const filterState = {
             stacked: {},
             trend: {}
         };
 
-        // 标准化数据 - 将日期转换为可读格式
         function formatDate(dateStr) {
             const month = dateStr.substring(0, 2);
             const day = dateStr.substring(2, 4);
             return `${parseInt(month)}月${parseInt(day)}日`;
         }
 
-        // 固定颜色配置 - 每个人在所有图表中使用相同颜色
         const personColors = {
             '徐岚': '#FF6384',
             '方文': '#36A2EB',
@@ -1282,13 +1339,13 @@
             '马文雅': '#8E44AD'
         };
 
-        // 获取某人的固定颜色
         function getPersonColor(name) {
             return personColors[name] || '#C9CBCF';
         }
 
-        // 计算统计数据
         function calculateStats() {
+            if (rawData.length === 0) return { totalDistance: 0, totalRuns: 0, uniqueRunners: 0, avgDistance: 0, maxDistance: 0 };
+
             const totalDistance = rawData.reduce((sum, item) => sum + item.distance, 0);
             const totalRuns = rawData.length;
             const uniqueRunners = [...new Set(rawData.map(item => item.name))].length;
@@ -1298,7 +1355,6 @@
             return { totalDistance, totalRuns, uniqueRunners, avgDistance, maxDistance };
         }
 
-        // 渲染统计卡片
         function renderStatsSummary() {
             const stats = calculateStats();
             const container = document.getElementById('statsSummary');
@@ -1332,13 +1388,10 @@
             `;
         }
 
-        // 计算个人总里程
         function getPersonalTotals() {
             const totals = {};
             rawData.forEach(item => {
-                if (!totals[item.name]) {
-                    totals[item.name] = 0;
-                }
+                if (!totals[item.name]) totals[item.name] = 0;
                 totals[item.name] += item.distance;
             });
             return Object.entries(totals)
@@ -1346,13 +1399,10 @@
                 .map(([name, distance]) => ({ name, distance }));
         }
 
-        // 计算个人跑步次数
         function getRunCounts() {
             const counts = {};
             rawData.forEach(item => {
-                if (!counts[item.name]) {
-                    counts[item.name] = 0;
-                }
+                if (!counts[item.name]) counts[item.name] = 0;
                 counts[item.name]++;
             });
             return Object.entries(counts)
@@ -1360,13 +1410,11 @@
                 .map(([name, count]) => ({ name, count }));
         }
 
-        // 获取日期对应的ISO周数
         function getWeekNumber(dateStr) {
             const month = parseInt(dateStr.substring(0, 2));
             const day = parseInt(dateStr.substring(2, 4));
             const date = new Date(2025, month - 1, day);
 
-            // 计算ISO周数
             const target = new Date(date.valueOf());
             const dayNr = (date.getDay() + 6) % 7;
             target.setDate(target.getDate() - dayNr + 3);
@@ -1375,21 +1423,17 @@
             if (target.getDay() !== 4) {
                 target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
             }
-            const weekNum = 1 + Math.ceil((firstThursday - target) / 604800000);
-            return weekNum;
+            return 1 + Math.ceil((firstThursday - target) / 604800000);
         }
 
-        // 按周统计每个人的里程
         function getWeeklyDataByPerson() {
             const weeklyData = {};
             const allPersons = [...new Set(rawData.map(item => item.name))];
 
-            // 计算每个人的总里程用于排序
             const personTotals = {};
             allPersons.forEach(person => personTotals[person] = 0);
             rawData.forEach(item => personTotals[item.name] += item.distance);
 
-            // 按总里程降序排序
             const sortedPersons = allPersons.sort((a, b) => personTotals[b] - personTotals[a]);
 
             rawData.forEach(item => {
@@ -1398,14 +1442,11 @@
 
                 if (!weeklyData[weekLabel]) {
                     weeklyData[weekLabel] = {};
-                    sortedPersons.forEach(person => {
-                        weeklyData[weekLabel][person] = 0;
-                    });
+                    sortedPersons.forEach(person => weeklyData[weekLabel][person] = 0);
                 }
                 weeklyData[weekLabel][item.name] += item.distance;
             });
 
-            // 按周数排序
             const sortedWeeks = Object.keys(weeklyData).sort((a, b) => {
                 const numA = parseInt(a.match(/\d+/)[0]);
                 const numB = parseInt(b.match(/\d+/)[0]);
@@ -1415,11 +1456,9 @@
             return { weeks: sortedWeeks, data: weeklyData, persons: sortedPersons };
         }
 
-        // 创建筛选器
         function createFilter(containerId, filterType, persons) {
             const container = document.getElementById(containerId);
 
-            // 初始化筛选状态（默认全选）
             persons.forEach(person => {
                 if (filterState[filterType][person] === undefined) {
                     filterState[filterType][person] = true;
@@ -1448,13 +1487,10 @@
 
             container.innerHTML = html;
 
-            // 绑定事件
             container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 cb.addEventListener('change', (e) => {
-                    const person = e.target.dataset.person;
-                    const type = e.target.dataset.type;
-                    filterState[type][person] = e.target.checked;
-                    updateChart(type);
+                    filterState[e.target.dataset.type][e.target.dataset.person] = e.target.checked;
+                    updateChart(e.target.dataset.type);
                 });
             });
 
@@ -1471,33 +1507,24 @@
             });
         }
 
-        // 更新图表
         function updateChart(type) {
-            if (type === 'stacked') {
-                renderWeeklyStackedChart();
-            } else if (type === 'trend') {
-                renderWeeklyTrendChart();
-            }
+            if (type === 'stacked') renderWeeklyStackedChart();
+            else if (type === 'trend') renderWeeklyTrendChart();
         }
 
-        // 渲染每周堆积柱状图
         function renderWeeklyStackedChart() {
+            if (rawData.length === 0) return;
+
             const { weeks, data, persons } = getWeeklyDataByPerson();
 
-            // 首次渲染时创建筛选器
             if (!document.querySelector('#stackedFilter input')) {
                 createFilter('stackedFilter', 'stacked', persons);
             }
 
-            // 根据筛选状态过滤人员
             const filteredPersons = persons.filter(p => filterState.stacked[p]);
-
             const ctx = document.getElementById('weeklyStackedChart').getContext('2d');
 
-            // 销毁旧图表
-            if (weeklyStackedChart) {
-                weeklyStackedChart.destroy();
-            }
+            if (weeklyStackedChart) weeklyStackedChart.destroy();
 
             const datasets = filteredPersons.map(person => ({
                 label: person,
@@ -1510,65 +1537,37 @@
 
             weeklyStackedChart = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: weeks,
-                    datasets: datasets
-                },
+                data: { labels: weeks, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    const value = context.raw;
-                                    if (value === 0) return null;
-                                    return `${context.dataset.label}: ${value.toFixed(2)} km`;
-                                },
-                                footer: function(tooltipItems) {
-                                    let total = 0;
-                                    tooltipItems.forEach(item => {
-                                        total += item.raw;
-                                    });
-                                    return `本周总计: ${total.toFixed(2)} km`;
-                                }
+                                label: ctx => ctx.raw === 0 ? null : `${ctx.dataset.label}: ${ctx.raw.toFixed(2)} km`,
+                                footer: items => `本周总计: ${items.reduce((s, i) => s + i.raw, 0).toFixed(2)} km`
                             }
                         }
                     },
                     scales: {
-                        x: {
-                            stacked: true,
-                            title: {
-                                display: true,
-                                text: '周次'
-                            }
-                        },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: '公里 (km)'
-                            }
-                        }
+                        x: { stacked: true, title: { display: true, text: '周次' } },
+                        y: { stacked: true, beginAtZero: true, title: { display: true, text: '公里 (km)' } }
                     }
                 }
             });
         }
 
-        // 渲染个人总里程图表
         function renderTotalDistanceChart() {
+            if (rawData.length === 0) return;
+
             const data = getPersonalTotals();
             const ctx = document.getElementById('totalDistanceChart').getContext('2d');
 
-            new Chart(ctx, {
+            if (totalDistanceChart) totalDistanceChart.destroy();
+
+            totalDistanceChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.map(d => d.name),
@@ -1583,28 +1582,21 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: '公里 (km)'
-                            }
-                        }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: '公里 (km)' } } }
                 }
             });
         }
 
-        // 渲染跑步次数图表
         function renderRunCountChart() {
+            if (rawData.length === 0) return;
+
             const data = getRunCounts();
             const ctx = document.getElementById('runCountChart').getContext('2d');
 
-            new Chart(ctx, {
+            if (runCountChart) runCountChart.destroy();
+
+            runCountChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.map(d => d.name),
@@ -1621,43 +1613,25 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     indexAxis: 'y',
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            },
-                            title: {
-                                display: true,
-                                text: '次数'
-                            }
-                        }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: '次数' } } }
                 }
             });
         }
 
-        // 渲染每周个人趋势曲线图
         function renderWeeklyTrendChart() {
+            if (rawData.length === 0) return;
+
             const { weeks, data, persons } = getWeeklyDataByPerson();
 
-            // 首次渲染时创建筛选器
             if (!document.querySelector('#trendFilter input')) {
                 createFilter('trendFilter', 'trend', persons);
             }
 
-            // 根据筛选状态过滤人员
             const filteredPersons = persons.filter(p => filterState.trend[p]);
-
             const ctx = document.getElementById('weeklyTrendChart').getContext('2d');
 
-            // 销毁旧图表
-            if (weeklyTrendChart) {
-                weeklyTrendChart.destroy();
-            }
+            if (weeklyTrendChart) weeklyTrendChart.destroy();
 
             const datasets = filteredPersons.map(person => ({
                 label: person,
@@ -1674,69 +1648,42 @@
 
             weeklyTrendChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: weeks,
-                    datasets: datasets
-                },
+                data: { labels: weeks, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    const value = context.raw;
-                                    if (value === 0) return `${context.dataset.label}: 未跑步`;
-                                    return `${context.dataset.label}: ${value.toFixed(2)} km`;
-                                }
+                                label: ctx => ctx.raw === 0 ? `${ctx.dataset.label}: 未跑步` : `${ctx.dataset.label}: ${ctx.raw.toFixed(2)} km`
                             }
                         }
                     },
                     scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: '周次'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: '公里 (km)'
-                            }
-                        }
+                        x: { title: { display: true, text: '周次' } },
+                        y: { beginAtZero: true, title: { display: true, text: '公里 (km)' } }
                     }
                 }
             });
         }
 
-        // 月份筛选状态
+        // ============== 数据表格和筛选 ==============
         let currentMonthFilter = 'all';
         let currentPersonFilter = 'all';
 
-        // 获取月份名称
         function getMonthName(monthNum) {
             const months = { '01': '1月', '02': '2月', '03': '3月', '04': '4月', '05': '5月', '06': '6月', '07': '7月', '08': '8月', '09': '9月', '10': '10月', '11': '11月', '12': '12月' };
             return months[monthNum] || monthNum + '月';
         }
 
-        // 创建月份筛选器
         function createMonthFilter() {
             const container = document.getElementById('monthFilter');
             const months = [...new Set(rawData.map(item => item.date.substring(0, 2)))].sort();
 
             let html = '<button class="active" data-month="all">全部</button>';
-            months.forEach(month => {
-                html += `<button data-month="${month}">${getMonthName(month)}</button>`;
-            });
+            months.forEach(month => html += `<button data-month="${month}">${getMonthName(month)}</button>`);
 
             container.innerHTML = html;
 
@@ -1750,15 +1697,12 @@
             });
         }
 
-        // 创建人员筛选器
         function createPersonFilter() {
             const container = document.getElementById('personFilter');
             const persons = [...new Set(rawData.map(item => item.name))].sort();
 
             let html = '<button class="active" data-person="all">全部成员</button>';
-            persons.forEach(person => {
-                html += `<button data-person="${person}">${person}</button>`;
-            });
+            persons.forEach(person => html += `<button data-person="${person}">${person}</button>`);
 
             container.innerHTML = html;
 
@@ -1772,28 +1716,21 @@
             });
         }
 
-        // 渲染数据表格
         function renderDataTable() {
             const tbody = document.querySelector('#dataTable tbody');
             tbody.innerHTML = '';
 
             let filteredData = rawData;
-
-            // 月份筛选
             if (currentMonthFilter !== 'all') {
                 filteredData = filteredData.filter(item => item.date.substring(0, 2) === currentMonthFilter);
             }
-
-            // 人员筛选
             if (currentPersonFilter !== 'all') {
                 filteredData = filteredData.filter(item => item.name === currentPersonFilter);
             }
 
             filteredData.forEach(item => {
                 const row = document.createElement('tr');
-                if (item.note) {
-                    row.classList.add('highlight');
-                }
+                if (item.note) row.classList.add('highlight');
                 row.innerHTML = `
                     <td>${item.id}</td>
                     <td>${item.name}</td>
@@ -1805,7 +1742,7 @@
             });
         }
 
-        // 计算每周达标次数（周目标: 3km+）
+        // ============== 目标和奖牌统计 ==============
         function getWeeklyGoalStats() {
             const { weeks, data, persons } = getWeeklyDataByPerson();
             const goalCounts = {};
@@ -1813,9 +1750,7 @@
             persons.forEach(person => {
                 goalCounts[person] = 0;
                 weeks.forEach(week => {
-                    if (data[week][person] >= 3) {
-                        goalCounts[person]++;
-                    }
+                    if (data[week][person] >= 3) goalCounts[person]++;
                 });
             });
 
@@ -1825,12 +1760,9 @@
                 .map(([name, count]) => ({ name, count }));
         }
 
-        // 渲染每周达标统计
         function renderWeeklyGoalStats() {
             const data = getWeeklyGoalStats();
-            const container = document.getElementById('weeklyGoalStats');
-
-            container.innerHTML = data.map(d => `
+            document.getElementById('weeklyGoalStats').innerHTML = data.map(d => `
                 <div class="goal-card">
                     <div class="name">${d.name}</div>
                     <div class="count">${d.count}</div>
@@ -1839,28 +1771,21 @@
             `).join('');
         }
 
-        // 计算每月里程排名和奖牌
         function getMonthlyMedals() {
             const monthlyData = {};
             const months = [...new Set(rawData.map(item => item.date.substring(0, 2)))].sort();
 
-            // 计算每月每人的总里程
-            months.forEach(month => {
-                monthlyData[month] = {};
-            });
+            months.forEach(month => monthlyData[month] = {});
 
             rawData.forEach(item => {
                 const month = item.date.substring(0, 2);
-                if (!monthlyData[month][item.name]) {
-                    monthlyData[month][item.name] = 0;
-                }
+                if (!monthlyData[month][item.name]) monthlyData[month][item.name] = 0;
                 monthlyData[month][item.name] += item.distance;
             });
 
-            // 计算每月前三名
             const monthlyRankings = {};
             months.forEach(month => {
-                const rankings = Object.entries(monthlyData[month])
+                monthlyRankings[month] = Object.entries(monthlyData[month])
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 3)
                     .map(([name, distance], index) => ({
@@ -1868,22 +1793,18 @@
                         distance,
                         medal: index === 0 ? '🏅' : index === 1 ? '🥈' : '🥉'
                     }));
-                monthlyRankings[month] = rankings;
             });
 
             return { months, rankings: monthlyRankings };
         }
 
-        // 计算奖牌汇总
         function getMedalSummary() {
             const { months, rankings } = getMonthlyMedals();
             const medalCounts = {};
 
             months.forEach(month => {
                 rankings[month].forEach((entry, index) => {
-                    if (!medalCounts[entry.name]) {
-                        medalCounts[entry.name] = { gold: 0, silver: 0, bronze: 0 };
-                    }
+                    if (!medalCounts[entry.name]) medalCounts[entry.name] = { gold: 0, silver: 0, bronze: 0 };
                     if (index === 0) medalCounts[entry.name].gold++;
                     else if (index === 1) medalCounts[entry.name].silver++;
                     else if (index === 2) medalCounts[entry.name].bronze++;
@@ -1899,12 +1820,9 @@
                 .sort((a, b) => b.total - a.total || b.gold - a.gold || b.silver - a.silver);
         }
 
-        // 渲染月度奖牌
         function renderMonthlyMedals() {
             const { months, rankings } = getMonthlyMedals();
-            const container = document.getElementById('monthlyMedals');
-
-            container.innerHTML = months.map(month => `
+            document.getElementById('monthlyMedals').innerHTML = months.map(month => `
                 <div class="month-medal-card">
                     <h3>${getMonthName(month)}</h3>
                     ${rankings[month].map(entry => `
@@ -1918,23 +1836,18 @@
             `).join('');
         }
 
-        // 渲染奖牌汇总
         function renderMedalSummary() {
             const data = getMedalSummary();
-            const container = document.getElementById('medalSummary');
-
-            container.innerHTML = data.map(d => `
+            document.getElementById('medalSummary').innerHTML = data.map(d => `
                 <div class="medal-summary-card">
                     <div class="name">${d.name}</div>
-                    <div class="medals">
-                        ${'🏅'.repeat(d.gold)}${'🥈'.repeat(d.silver)}${'🥉'.repeat(d.bronze)}
-                    </div>
+                    <div class="medals">${'🏅'.repeat(d.gold)}${'🥈'.repeat(d.silver)}${'🥉'.repeat(d.bronze)}</div>
                     <div class="total">${d.gold}金 ${d.silver}银 ${d.bronze}铜</div>
                 </div>
             `).join('');
         }
 
-        // 切换数据表格显示/隐藏
+        // ============== 其他功能 ==============
         function toggleDataTable() {
             const header = document.querySelector('.collapsible-header');
             const content = document.getElementById('dataTableContent');
@@ -1949,32 +1862,34 @@
             }
         }
 
-        // 导出页面为图片
         function exportToImage() {
             const btn = document.querySelector('.export-btn');
             const originalText = btn.innerHTML;
             btn.innerHTML = '⏳ 导出中...';
             btn.disabled = true;
 
-            // 隐藏导出按钮和添加数据按钮
             btn.style.display = 'none';
             document.querySelector('.add-data-btn').style.display = 'none';
+            document.querySelector('.batch-import-btn').style.display = 'none';
+            document.querySelector('.config-btn').style.display = 'none';
+            document.getElementById('connectionStatus').style.display = 'none';
 
-            html2canvas(document.querySelector('.container'), {
+            html2canvas(document.getElementById('mainContainer'), {
                 backgroundColor: null,
                 scale: 2,
                 useCORS: true,
                 logging: false
             }).then(canvas => {
-                // 创建下载链接
                 const link = document.createElement('a');
                 link.download = `跑步数据统计_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
 
-                // 恢复按钮
                 btn.style.display = 'block';
                 document.querySelector('.add-data-btn').style.display = 'block';
+                document.querySelector('.batch-import-btn').style.display = 'block';
+                document.querySelector('.config-btn').style.display = 'block';
+                document.getElementById('connectionStatus').style.display = 'block';
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }).catch(err => {
@@ -1982,116 +1897,22 @@
                 alert('导出失败，请重试');
                 btn.style.display = 'block';
                 document.querySelector('.add-data-btn').style.display = 'block';
+                document.querySelector('.batch-import-btn').style.display = 'block';
+                document.querySelector('.config-btn').style.display = 'block';
+                document.getElementById('connectionStatus').style.display = 'block';
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             });
         }
 
-        // 添加数据弹窗相关函数
-        function openAddDataModal() {
-            const modal = document.getElementById('addDataModal');
-            modal.classList.add('active');
+        // 渲染所有内容
+        function renderAll() {
+            // 重置筛选器状态
+            filterState.stacked = {};
+            filterState.trend = {};
+            document.getElementById('stackedFilter').innerHTML = '';
+            document.getElementById('trendFilter').innerHTML = '';
 
-            // 填充人员下拉框
-            const select = document.getElementById('inputName');
-            const persons = [...new Set(rawData.map(item => item.name))].sort();
-            select.innerHTML = '<option value="">-- 选择已有成员 --</option>';
-            persons.forEach(person => {
-                select.innerHTML += `<option value="${person}">${person}</option>`;
-            });
-
-            // 设置默认日期为今天
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('inputDate').value = today;
-
-            // 清空其他字段
-            document.getElementById('inputNewName').value = '';
-            document.getElementById('inputDistance').value = '';
-            document.getElementById('inputNote').value = '';
-            document.getElementById('codeOutput').style.display = 'none';
-            document.getElementById('copyBtn').style.display = 'none';
-            document.getElementById('copySuccess').style.display = 'none';
-        }
-
-        function closeAddDataModal() {
-            const modal = document.getElementById('addDataModal');
-            modal.classList.remove('active');
-        }
-
-        function generateDataCode() {
-            const selectName = document.getElementById('inputName').value;
-            const newName = document.getElementById('inputNewName').value.trim();
-            const dateInput = document.getElementById('inputDate').value;
-            const distance = parseFloat(document.getElementById('inputDistance').value);
-            const note = document.getElementById('inputNote').value.trim();
-
-            // 确定姓名
-            const name = newName || selectName;
-            if (!name) {
-                alert('请选择或输入姓名');
-                return;
-            }
-            if (!dateInput) {
-                alert('请选择日期');
-                return;
-            }
-            if (isNaN(distance) || distance <= 0) {
-                alert('请输入有效的距离');
-                return;
-            }
-
-            // 转换日期格式 2025-01-14 -> 0114
-            const dateParts = dateInput.split('-');
-            const dateCode = dateParts[1] + dateParts[2];
-
-            // 计算新ID
-            const maxId = Math.max(...rawData.map(item => item.id));
-            const newId = maxId + 1;
-
-            // 生成代码
-            let code = `{ id: ${newId}, name: '${name}', date: '${dateCode}', distance: ${distance}, unit: 'km'`;
-            if (note) {
-                code += `, note: '${note}'`;
-            }
-            code += ' },';
-
-            document.getElementById('codeOutput').textContent = code;
-            document.getElementById('codeOutput').style.display = 'block';
-            document.getElementById('copyBtn').style.display = 'block';
-        }
-
-        function copyCode() {
-            const code = document.getElementById('codeOutput').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                document.getElementById('copySuccess').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('copySuccess').style.display = 'none';
-                }, 2000);
-            }).catch(err => {
-                console.error('复制失败:', err);
-                // 备用方案
-                const textarea = document.createElement('textarea');
-                textarea.value = code;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                document.getElementById('copySuccess').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('copySuccess').style.display = 'none';
-                }, 2000);
-            });
-        }
-
-        // 点击弹窗外部关闭
-        document.getElementById('addDataModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeAddDataModal();
-            }
-        });
-
-        // 初始化
-        document.addEventListener('DOMContentLoaded', () => {
             renderStatsSummary();
             renderWeeklyGoalStats();
             renderMonthlyMedals();
@@ -2103,7 +1924,21 @@
             createMonthFilter();
             createPersonFilter();
             renderDataTable();
+        }
+
+        // 点击弹窗外部关闭
+        document.getElementById('addDataModal').addEventListener('click', function(e) {
+            if (e.target === this) closeAddDataModal();
         });
+        document.getElementById('batchImportModal').addEventListener('click', function(e) {
+            if (e.target === this) closeBatchImportModal();
+        });
+        document.getElementById('configModal').addEventListener('click', function(e) {
+            if (e.target === this) closeConfigModal();
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
