@@ -3297,24 +3297,46 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             yearSummaryContent.style.transform = 'none';
             yearSummaryContent.style.animation = 'none';
 
+            // 显示加载提示
+            showLoading('正在生成图片，请稍候...');
+
             // 先滚动到元素位置,确保完全可见
             document.getElementById('yearSummarySection').scrollIntoView({ behavior: 'auto', block: 'start' });
 
-            // 等待100ms让 DOM 更新,然后进行截图
+            // 等待800ms让 DOM 完全更新和渲染,然后进行截图
             setTimeout(() => {
                 html2canvas(document.getElementById('yearSummarySection'), {
                     backgroundColor: null,
                     scale: 2,
                     useCORS: true,
-                    logging: false
+                    logging: true,
+                    allowTaint: false
                 }).then(canvas => {
+                    // 检查canvas是否有效
+                    if (!canvas || canvas.width === 0 || canvas.height === 0) {
+                        console.error('Canvas is empty or invalid');
+                        hideLoading();
+                        alert('导出失败：无法生成图片内容，请重试');
+                        // 恢复显示
+                        exportBtn.style.display = originalDisplays.exportBtn || 'block';
+                        selectorContainer.style.display = originalDisplays.selector || 'block';
+                        addBtn.style.display = originalDisplays.add || 'block';
+                        batchBtn.style.display = originalDisplays.batch || 'block';
+                        exportMainBtn.style.display = originalDisplays.exportMain || 'block';
+                        configBtn.style.display = originalDisplays.config || 'block';
+                        connectionStatus.style.display = originalDisplays.status || 'block';
+                        return;
+                    }
+
                     const link = document.createElement('a');
                     const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
                     link.download = `${name}_2025年终跑步总结_${date}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
 
-                    // 恢复显示
+                    hideLoading();
+
+                    // 恢复显示(但保持内容可见，不恢复动画)
                     exportBtn.style.display = originalDisplays.exportBtn || 'block';
                     selectorContainer.style.display = originalDisplays.selector || 'block';
                     addBtn.style.display = originalDisplays.add || 'block';
@@ -3324,9 +3346,10 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                     connectionStatus.style.display = originalDisplays.status || 'block';
                 }).catch(err => {
                     console.error('导出失败:', err);
-                    alert('导出失败，请重试');
+                    hideLoading();
+                    alert('导出失败: ' + err.message + '，请重试');
 
-                    // 恢复显示
+                    // 恢复显示(但保持内容可见，不恢复动画)
                     exportBtn.style.display = originalDisplays.exportBtn || 'block';
                     selectorContainer.style.display = originalDisplays.selector || 'block';
                     addBtn.style.display = originalDisplays.add || 'block';
@@ -3335,7 +3358,7 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                     configBtn.style.display = originalDisplays.config || 'block';
                     connectionStatus.style.display = originalDisplays.status || 'block';
                 });
-            }, 500);
+            }, 800);
         }
 
         // 渲染所有内容
