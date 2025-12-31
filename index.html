@@ -3245,14 +3245,17 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             configBtn.style.display = 'none';
             connectionStatus.style.display = 'none';
 
-            // 等待一小段时间确保DOM更新
+            // 等待500ms确保 DOM 更新、CSS 动画和 Chart.js 渲染完成
             setTimeout(() => {
                 html2canvas(document.getElementById('yearSummarySection'), {
-                    backgroundColor: null,
+                    backgroundColor: '#ffffff',  // 白色背景
                     scale: 2,
                     useCORS: true,
-                    logging: false,
-                    windowWidth: 1400
+                    allowTaint: true,
+                    logging: true,
+                    windowWidth: 1400,
+                    scrollX: 0,
+                    scrollY: -window.scrollY
                 }).then(canvas => {
                     const link = document.createElement('a');
                     const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
@@ -3281,7 +3284,7 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                     configBtn.style.display = originalDisplays.config || 'block';
                     connectionStatus.style.display = originalDisplays.status || 'block';
                 });
-            }, 100);
+            }, 500);
         }
 
         // 渲染所有内容
