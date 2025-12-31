@@ -342,6 +342,9 @@
             font-size: 0.85em;
         }
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
             .charts-grid {
                 grid-template-columns: 1fr;
             }
@@ -349,38 +352,81 @@
                 font-size: 1.8em;
             }
             .year-summary-section {
-                padding: 25px 20px;
+                padding: 20px 15px;
+                border-radius: 15px;
             }
             .year-summary-section h1 {
-                font-size: 2em;
+                font-size: 1.8em;
+                margin-bottom: 10px;
             }
             .year-summary-section .subtitle {
-                font-size: 1em;
+                font-size: 0.95em;
+                margin-bottom: 20px;
+            }
+            .person-selector-container {
+                margin-bottom: 25px;
             }
             .person-selector-container select {
-                font-size: 1.1em;
+                font-size: 1em;
                 padding: 12px 20px;
-                min-width: 240px;
+                min-width: 200px;
+                max-width: 100%;
             }
             .summary-cards-grid {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 15px;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
             }
             .year-summary-card {
-                padding: 18px;
+                padding: 15px 10px;
+            }
+            .year-summary-card .icon {
+                font-size: 2em;
+            }
+            .year-summary-card .label {
+                font-size: 0.8em;
             }
             .year-summary-card .value {
-                font-size: 1.8em;
+                font-size: 1.6em;
             }
-            .milestone-section, .encouragement-section, .highlight-moments {
-                padding: 20px;
+            .year-summary-card .unit {
+                font-size: 0.75em;
             }
-            .encouragement-text {
+            .milestone-section, .encouragement-section, .highlight-moments, .monthly-chart-container {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            .milestone-section h3, .encouragement-section h3, .highlight-moments h3, .monthly-chart-container h3 {
+                font-size: 1.3em;
+                margin-bottom: 15px;
+            }
+            .landmark-comparison, .earth-progress-container {
+                padding: 15px;
+            }
+            .landmark-comparison .distance-highlight {
+                font-size: 1.5em;
+            }
+            .landmark-comparison .comparison-text {
                 font-size: 1em;
             }
+            .encouragement-text {
+                font-size: 0.95em;
+                line-height: 1.6;
+            }
             .highlight-grid {
-                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
+            }
+            .highlight-item {
+                padding: 15px 10px;
+            }
+            .highlight-item .icon {
+                font-size: 1.5em;
+            }
+            .highlight-item .title {
+                font-size: 0.8em;
+            }
+            .highlight-item .value {
+                font-size: 1.4em;
             }
         }
         .collapsible-header {
