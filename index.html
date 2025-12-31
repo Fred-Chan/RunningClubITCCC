@@ -3216,41 +3216,72 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                 return;
             }
 
-            // 隐藏导出按钮和选择器
+            // 隐藏所有可能遮挡的元素
             const exportBtn = event.target;
             const selectorContainer = document.querySelector('.person-selector-container');
+            const addBtn = document.querySelector('.add-data-btn');
+            const batchBtn = document.querySelector('.batch-import-btn');
+            const exportMainBtn = document.querySelector('.export-btn');
+            const configBtn = document.querySelector('.config-btn');
+            const connectionStatus = document.getElementById('connectionStatus');
 
+            // 保存原始显示状态
+            const originalDisplays = {
+                exportBtn: exportBtn.style.display,
+                selector: selectorContainer.style.display,
+                add: addBtn.style.display,
+                batch: batchBtn.style.display,
+                exportMain: exportMainBtn.style.display,
+                config: configBtn.style.display,
+                status: connectionStatus.style.display
+            };
+
+            // 隐藏所有元素
             exportBtn.style.display = 'none';
             selectorContainer.style.display = 'none';
+            addBtn.style.display = 'none';
+            batchBtn.style.display = 'none';
+            exportMainBtn.style.display = 'none';
+            configBtn.style.display = 'none';
+            connectionStatus.style.display = 'none';
 
-            // 使用html2canvas截图
-            html2canvas(document.getElementById('yearSummarySection'), {
-                backgroundColor: null,
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                windowWidth: 1400,
-                onclone: function(clonedDoc) {
-                    // 在克隆的文档中也隐藏按钮
-                    const clonedBtn = clonedDoc.querySelector('.encouragement-section').nextElementSibling;
-                    if (clonedBtn) clonedBtn.style.display = 'none';
-                }
-            }).then(canvas => {
-                const link = document.createElement('a');
-                const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
-                link.download = `${name}_2025年终跑步总结_${date}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+            // 等待一小段时间确保DOM更新
+            setTimeout(() => {
+                html2canvas(document.getElementById('yearSummarySection'), {
+                    backgroundColor: null,
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    windowWidth: 1400
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
+                    link.download = `${name}_2025年终跑步总结_${date}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
 
-                // 恢复显示
-                exportBtn.style.display = 'block';
-                selectorContainer.style.display = 'block';
-            }).catch(err => {
-                console.error('导出失败:', err);
-                alert('导出失败，请重试');
-                exportBtn.style.display = 'block';
-                selectorContainer.style.display = 'block';
-            });
+                    // 恢复显示
+                    exportBtn.style.display = originalDisplays.exportBtn || 'block';
+                    selectorContainer.style.display = originalDisplays.selector || 'block';
+                    addBtn.style.display = originalDisplays.add || 'block';
+                    batchBtn.style.display = originalDisplays.batch || 'block';
+                    exportMainBtn.style.display = originalDisplays.exportMain || 'block';
+                    configBtn.style.display = originalDisplays.config || 'block';
+                    connectionStatus.style.display = originalDisplays.status || 'block';
+                }).catch(err => {
+                    console.error('导出失败:', err);
+                    alert('导出失败，请重试');
+
+                    // 恢复显示
+                    exportBtn.style.display = originalDisplays.exportBtn || 'block';
+                    selectorContainer.style.display = originalDisplays.selector || 'block';
+                    addBtn.style.display = originalDisplays.add || 'block';
+                    batchBtn.style.display = originalDisplays.batch || 'block';
+                    exportMainBtn.style.display = originalDisplays.exportMain || 'block';
+                    configBtn.style.display = originalDisplays.config || 'block';
+                    connectionStatus.style.display = originalDisplays.status || 'block';
+                });
+            }, 100);
         }
 
         // 渲染所有内容
