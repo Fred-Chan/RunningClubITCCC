@@ -1049,8 +1049,8 @@
         </div>
 
         <!-- 2025年终总结模块 -->
-        <div class="year-summary-section">
-            <h1>🎊 2025年终跑步总结 🎊</h1>
+        <div class="year-summary-section" id="yearSummarySection">
+            <h1>🎊 ITCCC跑团 2025年终总结 🎊</h1>
             <div class="subtitle">回顾这一年的坚持与突破，每一步都值得骄傲！</div>
 
             <div class="person-selector-container">
@@ -1161,6 +1161,24 @@
                 <div class="encouragement-section">
                     <h3>🌈 专属寄语</h3>
                     <div id="encouragementTexts"></div>
+                </div>
+
+                <!-- 导出按钮 -->
+                <div style="text-align: center; margin-top: 30px;">
+                    <button onclick="exportYearSummary()" style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        border: none;
+                        padding: 15px 40px;
+                        border-radius: 50px;
+                        font-size: 1.1em;
+                        font-weight: bold;
+                        cursor: pointer;
+                        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+                        transition: all 0.3s;
+                    " onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+                        📸 导出我的年终总结
+                    </button>
                 </div>
             </div>
         </div>
@@ -3061,22 +3079,23 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             const monthNames = months.map(m => getMonthName(m));
             const distances = months.map(m => stats.monthlyData[m]?.distance || 0);
 
-            // 创建渐变色
-            const gradient = ctx.createLinearGradient(0, 0, 0, 350);
-            gradient.addColorStop(0, '#FF6384');
-            gradient.addColorStop(0.5, '#36A2EB');
-            gradient.addColorStop(1, '#FFCE56');
-
             personalMonthlyChart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
                     labels: monthNames,
                     datasets: [{
                         label: '月度里程 (km)',
                         data: distances,
-                        backgroundColor: gradient,
-                        borderRadius: 8,
-                        borderSkipped: false
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        borderWidth: 3
                     }]
                 },
                 options: {
@@ -3093,7 +3112,15 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: '公里 (km)' }
+                            title: { display: true, text: '公里 (km)' },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
@@ -3170,6 +3197,59 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             selector.innerHTML = '<option value="">🏃 选择你的名字，查看专属年终报告 🏃</option>';
             persons.forEach(person => {
                 selector.innerHTML += `<option value="${person}">${person}</option>`;
+            });
+        }
+
+        // 导出年终总结为图片
+        function exportYearSummary() {
+            const selector = document.getElementById('yearSummarySelector');
+            const name = selector.value;
+
+            if (!name) {
+                alert('请先选择你的名字查看年终总结');
+                return;
+            }
+
+            const yearSummaryContent = document.getElementById('yearSummaryContent');
+            if (!yearSummaryContent.classList.contains('active')) {
+                alert('请先查看年终总结');
+                return;
+            }
+
+            // 隐藏导出按钮和选择器
+            const exportBtn = event.target;
+            const selectorContainer = document.querySelector('.person-selector-container');
+
+            exportBtn.style.display = 'none';
+            selectorContainer.style.display = 'none';
+
+            // 使用html2canvas截图
+            html2canvas(document.getElementById('yearSummarySection'), {
+                backgroundColor: null,
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                windowWidth: 1400,
+                onclone: function(clonedDoc) {
+                    // 在克隆的文档中也隐藏按钮
+                    const clonedBtn = clonedDoc.querySelector('.encouragement-section').nextElementSibling;
+                    if (clonedBtn) clonedBtn.style.display = 'none';
+                }
+            }).then(canvas => {
+                const link = document.createElement('a');
+                const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
+                link.download = `${name}_2025年终跑步总结_${date}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                // 恢复显示
+                exportBtn.style.display = 'block';
+                selectorContainer.style.display = 'block';
+            }).catch(err => {
+                console.error('导出失败:', err);
+                alert('导出失败，请重试');
+                exportBtn.style.display = 'block';
+                selectorContainer.style.display = 'block';
             });
         }
 
