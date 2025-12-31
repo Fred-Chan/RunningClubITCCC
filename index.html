@@ -3245,17 +3245,22 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             configBtn.style.display = 'none';
             connectionStatus.style.display = 'none';
 
-            // 等待500ms确保 DOM 更新、CSS 动画和 Chart.js 渲染完成
+            // 强制确保内容可见(在原始 DOM 上操作,移除动画)
+            yearSummaryContent.style.display = 'block';
+            yearSummaryContent.style.opacity = '1';
+            yearSummaryContent.style.transform = 'none';
+            yearSummaryContent.style.animation = 'none';
+
+            // 先滚动到元素位置,确保完全可见
+            document.getElementById('yearSummarySection').scrollIntoView({ behavior: 'auto', block: 'start' });
+
+            // 等待100ms让 DOM 更新,然后进行截图
             setTimeout(() => {
                 html2canvas(document.getElementById('yearSummarySection'), {
-                    backgroundColor: '#ffffff',  // 白色背景
+                    backgroundColor: null,
                     scale: 2,
                     useCORS: true,
-                    allowTaint: true,
-                    logging: true,
-                    windowWidth: 1400,
-                    scrollX: 0,
-                    scrollY: -window.scrollY
+                    logging: false
                 }).then(canvas => {
                     const link = document.createElement('a');
                     const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
