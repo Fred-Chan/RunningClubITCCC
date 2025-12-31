@@ -2455,15 +2455,20 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             const day = parseInt(dateStr.substring(2, 4));
             const date = new Date(2025, month - 1, day);
 
-            const target = new Date(date.valueOf());
-            const dayNr = (date.getDay() + 6) % 7;
-            target.setDate(target.getDate() - dayNr + 3);
-            const firstThursday = target.valueOf();
-            target.setMonth(0, 1);
-            if (target.getDay() !== 4) {
-                target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+            // 2025年1月1日是星期三
+            const yearStart = new Date(2025, 0, 1);
+
+            // 找到第一个星期一：2025年1月6日
+            const firstMonday = new Date(2025, 0, 6);
+
+            // 1月1日到1月5日算作第1周
+            if (date < firstMonday) {
+                return 1;
             }
-            return 1 + Math.ceil((firstThursday - target) / 604800000);
+
+            // 从第一个完整周（1月6日开始）开始计算
+            const daysSinceFirstMonday = Math.floor((date - firstMonday) / 86400000);
+            return Math.floor(daysSinceFirstMonday / 7) + 2;
         }
 
         function getWeeklyDataByPerson() {
