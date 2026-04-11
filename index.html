@@ -1318,20 +1318,20 @@
         function getWeekNumber(dateStr) {
             const month = parseInt(dateStr.substring(0, 2));
             const day = parseInt(dateStr.substring(2, 4));
-            const date = new Date(2025, month - 1, day);
+            const date = new Date(2026, month - 1, day);
 
-            // 2025年1月1日是星期三
-            const yearStart = new Date(2025, 0, 1);
+            // 2026年1月1日是星期四
+            const yearStart = new Date(2026, 0, 1);
 
-            // 找到第一个星期一：2025年1月6日
-            const firstMonday = new Date(2025, 0, 6);
+            // 找到第一个星期一：2026年1月5日
+            const firstMonday = new Date(2026, 0, 5);
 
-            // 1月1日到1月5日算作第1周
+            // 1月1日到1月4日算作第1周
             if (date < firstMonday) {
                 return 1;
             }
 
-            // 从第一个完整周（1月6日开始）开始计算
+            // 从第一个完整周（1月5日开始）开始计算
             const daysSinceFirstMonday = Math.floor((date - firstMonday) / 86400000);
             return Math.floor(daysSinceFirstMonday / 7) + 2;
         }
@@ -1644,7 +1644,7 @@
                 row.innerHTML = `
                     <td>${item.id}</td>
                     <td>${item.name}</td>
-                    <td>2025年${formatDate(item.date)}</td>
+                    <td>2026年${formatDate(item.date)}</td>
                     <td>${item.distance.toFixed(2)}</td>
                     <td>${item.note || '-'}</td>
                 `;
@@ -1970,7 +1970,7 @@
             }
 
             // 总结性文案
-            texts.push(`2025年，你用<span class="highlight">${stats.totalRuns}次</span>奔跑，书写了属于自己的精彩！每一滴汗水都不会白流，每一步都在让你变得更好。2026年，让我们一起跑得更远、更快、更强！💪`);
+            texts.push(`2026年，你用<span class="highlight">${stats.totalRuns}次</span>奔跑，书写了属于自己的精彩！每一滴汗水都不会白流，每一步都在让你变得更好。2027年，让我们一起跑得更远、更快、更强！💪`);
 
             return texts;
         }
@@ -2174,7 +2174,7 @@
 
                     const link = document.createElement('a');
                     const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
-                    link.download = `${name}_2025年终跑步总结_${date}.png`;
+                    link.download = `${name}_2026年终跑步总结_${date}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
 
