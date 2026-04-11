@@ -6,7 +6,6 @@
     <title>跑步数据统计图表</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -518,78 +517,8 @@
             background: #667eea;
             color: white;
         }
-        .add-data-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 150px;
-            background: linear-gradient(135deg, #1ABC9C 0%, #16A085 100%);
-            color: white;
-            border: none;
-            padding: 15px 25px;
-            border-radius: 50px;
-            font-size: 1em;
-            cursor: pointer;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            transition: all 0.3s;
-            z-index: 1000;
-        }
-        .add-data-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-overlay.active {
-            display: flex;
-        }
-        .modal {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .modal.wide {
-            max-width: 700px;
-        }
-        .modal h2 {
-            color: #333;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        .modal-close {
-            float: right;
-            font-size: 1.5em;
-            cursor: pointer;
-            color: #999;
-            line-height: 1;
-        }
-        .modal-close:hover {
-            color: #333;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #333;
-        }
+        
+        
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 10px 12px;
@@ -684,53 +613,11 @@
             margin-top: 20px;
             font-size: 1.2em;
         }
-        .config-btn {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
-            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-size: 0.9em;
-            cursor: pointer;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            transition: all 0.3s;
-            z-index: 1000;
-        }
-        .config-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-        }
-        .batch-import-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 270px;
-            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
-            color: white;
-            border: none;
-            padding: 15px 25px;
-            border-radius: 50px;
-            font-size: 1em;
-            cursor: pointer;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            transition: all 0.3s;
-            z-index: 1000;
-        }
-        .batch-import-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-        }
-        .import-preview {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
+        
+        
+        
+        
+        
         .import-preview-item {
             padding: 5px 0;
             border-bottom: 1px solid #eee;
@@ -745,14 +632,7 @@
         .import-preview-item.invalid {
             color: #e74c3c;
         }
-        .import-stats {
-            display: flex;
-            gap: 15px;
-            margin-top: 10px;
-            padding: 10px;
-            background: #e8f5e9;
-            border-radius: 8px;
-        }
+        
         .import-stats span {
             font-weight: 600;
         }
@@ -1020,17 +900,7 @@
         .status-disconnected {
             background: #e74c3c;
         }
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            font-size: 0.85em;
-            z-index: 1000;
-        }
+        
         .format-help {
             background: #fff3cd;
             border: 1px solid #ffc107;
@@ -1045,22 +915,8 @@
             border-radius: 4px;
             font-family: monospace;
         }
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            display: none;
-        }
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            display: none;
-        }
+        
+        
     </style>
 </head>
 <body>
@@ -1275,17 +1131,7 @@
                 </div>
             </div>
         </div>
-
-        <button class="add-data-btn" onclick="openAddDataModal()">+ 添加数据</button>
-        <button class="batch-import-btn" onclick="openBatchImportModal()">📥 批量导入</button>
         <button class="export-btn" onclick="exportToImage()">📷 导出图片</button>
-        <button class="config-btn" onclick="openConfigModal()">⚙️ 配置</button>
-    </div>
-
-    <!-- 连接状态指示器 -->
-    <div class="connection-status" id="connectionStatus">
-        <span class="status-indicator status-disconnected" id="statusIndicator"></span>
-        <span id="statusText">未连接</span>
     </div>
 
     <!-- 加载中遮罩 -->
@@ -1294,121 +1140,9 @@
         <div class="loading-text" id="loadingText">加载数据中...</div>
     </div>
 
-    <!-- 添加数据弹窗 -->
-    <div class="modal-overlay" id="addDataModal">
-        <div class="modal">
-            <span class="modal-close" onclick="closeAddDataModal()">&times;</span>
-            <h2>添加跑步数据</h2>
-            <div class="form-group">
-                <label>姓名</label>
-                <select id="inputName">
-                    <option value="">-- 选择或输入新名字 --</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>或输入新名字</label>
-                <input type="text" id="inputNewName" placeholder="如果是新成员，在此输入">
-            </div>
-            <div class="form-group">
-                <label>日期</label>
-                <input type="date" id="inputDate" value="">
-            </div>
-            <div class="form-group">
-                <label>距离 (km)</label>
-                <input type="number" id="inputDistance" step="0.01" min="0" placeholder="例如: 5.5">
-            </div>
-            <div class="form-group">
-                <label>备注 (可选)</label>
-                <input type="text" id="inputNote" placeholder="例如: w10">
-            </div>
-            <div class="form-actions">
-                <button class="btn-secondary" onclick="closeAddDataModal()">取消</button>
-                <button class="btn-primary" id="saveDataBtn" onclick="saveData()">保存数据</button>
-            </div>
-            <div class="success-message" id="addSuccess">数据添加成功!</div>
-            <div class="error-message" id="addError"></div>
-        </div>
-    </div>
-
-    <!-- 批量导入弹窗 -->
-    <div class="modal-overlay" id="batchImportModal">
-        <div class="modal wide">
-            <span class="modal-close" onclick="closeBatchImportModal()">&times;</span>
-            <h2>批量导入数据</h2>
-            <div class="format-help">
-                <strong>格式说明：</strong>每行一条数据，使用逗号或空格分隔<br>
-                格式: <code>姓名, 日期(MMDD或MM-DD或M月D日), 距离, 备注(可选)</code><br>
-                示例:<br>
-                <code>徐岚, 1220, 5.5</code><br>
-                <code>方文, 12-21, 10, 周末训练</code><br>
-                <code>梁晨, 12月22日, 3.5</code>
-            </div>
-            <div class="form-group">
-                <label>批量数据</label>
-                <textarea id="batchInput" placeholder="粘贴数据到这里，每行一条..."></textarea>
-            </div>
-            <button class="btn-secondary" onclick="previewBatchData()" style="width: 100%; margin-bottom: 10px;">预览数据</button>
-            <div id="batchPreview" class="import-preview" style="display: none;"></div>
-            <div id="batchStats" class="import-stats" style="display: none;"></div>
-            <div class="form-actions">
-                <button class="btn-secondary" onclick="closeBatchImportModal()">取消</button>
-                <button class="btn-primary" id="batchImportBtn" onclick="executeBatchImport()" disabled>导入数据</button>
-            </div>
-            <div class="success-message" id="batchSuccess"></div>
-            <div class="error-message" id="batchError"></div>
-        </div>
-    </div>
-
-    <!-- 配置弹窗 -->
-    <div class="modal-overlay" id="configModal">
-        <div class="modal">
-            <span class="modal-close" onclick="closeConfigModal()">&times;</span>
-            <h2>Supabase 配置</h2>
-            <div class="format-help">
-                <strong>设置说明：</strong><br>
-                1. 登录 <a href="https://supabase.com" target="_blank">Supabase</a> 创建项目<br>
-                2. 在 Settings > API 中获取 URL 和 anon key<br>
-                3. 在 SQL Editor 中运行以下SQL创建表：
-                <pre style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 4px; font-size: 0.8em; overflow-x: auto;">
-CREATE TABLE running_records (
-  id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
-  date TEXT NOT NULL,
-  distance NUMERIC NOT NULL,
-  unit TEXT DEFAULT 'km',
-  note TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 允许匿名访问
-ALTER TABLE running_records ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
-            </div>
-            <div class="form-group">
-                <label>Supabase URL</label>
-                <input type="text" id="supabaseUrl" placeholder="https://xxx.supabase.co">
-            </div>
-            <div class="form-group">
-                <label>Supabase Anon Key</label>
-                <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
-            </div>
-            <div class="form-actions">
-                <button class="btn-secondary" onclick="closeConfigModal()">取消</button>
-                <button class="btn-primary" onclick="saveConfig()">保存配置</button>
-            </div>
-            <div class="success-message" id="configSuccess">配置保存成功!</div>
-            <div class="error-message" id="configError"></div>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-            <button class="btn-danger" onclick="clearConfig()" style="width: 100%;">清除配置（使用本地数据）</button>
-        </div>
-    </div>
-
+    
     <script>
         // ============== Supabase 配置 ==============
-        let supabaseClient = null;
-        let isConnected = false;
-
-
         // 本地备份数据 - 2026年
         // 数据格式: { id, name, date: 'MMDD', distance, unit: 'km', note? }
         // 通过Supabase或手动添加数据
@@ -1496,71 +1230,14 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             { id: 77, name: '陈德琴', date: '0401', distance: 4.34, unit: 'km' },
         ];
 
+
         // 实际使用的数据
         let rawData = [];
 
         // ============== 初始化 ==============
-        async function initApp() {
-            showLoading('初始化中...');
-
-            // 检查本地存储的配置
-            const savedUrl = localStorage.getItem('supabase_url');
-            const savedKey = localStorage.getItem('supabase_key');
-
-            if (savedUrl && savedKey) {
-                document.getElementById('supabaseUrl').value = savedUrl;
-                document.getElementById('supabaseKey').value = savedKey;
-                await connectToSupabase(savedUrl, savedKey);
-            } else {
-                // 使用本地数据
-                rawData = [...localData];
-                updateConnectionStatus(false);
-            }
-
-            // 渲染页面
+        function initApp() {
+            rawData = [...localData];
             renderAll();
-            hideLoading();
-        }
-
-        // 连接Supabase
-        async function connectToSupabase(url, key) {
-            try {
-                showLoading('连接数据库...');
-                supabaseClient = supabase.createClient(url, key);
-
-                // 测试连接并获取数据
-                const { data, error } = await supabaseClient
-                    .from('running_records')
-                    .select('*')
-                    .order('id', { ascending: true });
-
-                if (error) throw error;
-
-                rawData = data || [];
-                isConnected = true;
-                updateConnectionStatus(true);
-                console.log('Supabase 连接成功，加载了', rawData.length, '条记录');
-
-            } catch (err) {
-                console.error('Supabase 连接失败:', err);
-                rawData = [...localData];
-                isConnected = false;
-                updateConnectionStatus(false);
-            }
-        }
-
-        // 更新连接状态显示
-        function updateConnectionStatus(connected) {
-            const indicator = document.getElementById('statusIndicator');
-            const text = document.getElementById('statusText');
-
-            if (connected) {
-                indicator.className = 'status-indicator status-connected';
-                text.textContent = '已连接 Supabase';
-            } else {
-                indicator.className = 'status-indicator status-disconnected';
-                text.textContent = '本地模式';
-            }
         }
 
         // 显示/隐藏加载
@@ -1571,297 +1248,6 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
 
         function hideLoading() {
             document.getElementById('loadingOverlay').classList.add('hidden');
-        }
-
-        // ============== 配置管理 ==============
-        function openConfigModal() {
-            document.getElementById('configModal').classList.add('active');
-            document.getElementById('configSuccess').style.display = 'none';
-            document.getElementById('configError').style.display = 'none';
-        }
-
-        function closeConfigModal() {
-            document.getElementById('configModal').classList.remove('active');
-        }
-
-        async function saveConfig() {
-            const url = document.getElementById('supabaseUrl').value.trim();
-            const key = document.getElementById('supabaseKey').value.trim();
-
-            if (!url || !key) {
-                document.getElementById('configError').textContent = '请填写完整的配置信息';
-                document.getElementById('configError').style.display = 'block';
-                return;
-            }
-
-            localStorage.setItem('supabase_url', url);
-            localStorage.setItem('supabase_key', key);
-
-            await connectToSupabase(url, key);
-
-            if (isConnected) {
-                document.getElementById('configSuccess').style.display = 'block';
-                document.getElementById('configError').style.display = 'none';
-                renderAll();
-                setTimeout(closeConfigModal, 1500);
-            } else {
-                document.getElementById('configError').textContent = '连接失败，请检查配置信息';
-                document.getElementById('configError').style.display = 'block';
-            }
-        }
-
-        function clearConfig() {
-            localStorage.removeItem('supabase_url');
-            localStorage.removeItem('supabase_key');
-            supabaseClient = null;
-            isConnected = false;
-            rawData = [...localData];
-            updateConnectionStatus(false);
-            renderAll();
-            closeConfigModal();
-        }
-
-        // ============== 数据操作 ==============
-        // 添加单条数据
-        async function saveData() {
-            const selectName = document.getElementById('inputName').value;
-            const newName = document.getElementById('inputNewName').value.trim();
-            const dateInput = document.getElementById('inputDate').value;
-            const distance = parseFloat(document.getElementById('inputDistance').value);
-            const note = document.getElementById('inputNote').value.trim();
-
-            const name = newName || selectName;
-            if (!name) {
-                showAddError('请选择或输入姓名');
-                return;
-            }
-            if (!dateInput) {
-                showAddError('请选择日期');
-                return;
-            }
-            if (isNaN(distance) || distance < 0) {
-                showAddError('请输入有效的距离');
-                return;
-            }
-
-            // 转换日期格式
-            const dateParts = dateInput.split('-');
-            const dateCode = dateParts[1] + dateParts[2];
-
-            const newRecord = {
-                name: name,
-                date: dateCode,
-                distance: distance,
-                unit: 'km',
-                note: note || null
-            };
-
-            if (isConnected && supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('running_records')
-                        .insert([newRecord])
-                        .select();
-
-                    if (error) throw error;
-
-                    rawData.push(data[0]);
-                    showAddSuccess();
-                    renderAll();
-
-                } catch (err) {
-                    showAddError('保存失败: ' + err.message);
-                    return;
-                }
-            } else {
-                // 本地模式
-                const maxId = rawData.length > 0 ? Math.max(...rawData.map(r => r.id)) : 0;
-                newRecord.id = maxId + 1;
-                rawData.push(newRecord);
-                showAddSuccess();
-                renderAll();
-            }
-        }
-
-        function showAddSuccess() {
-            document.getElementById('addSuccess').style.display = 'block';
-            document.getElementById('addError').style.display = 'none';
-            // 清空表单
-            document.getElementById('inputNewName').value = '';
-            document.getElementById('inputDistance').value = '';
-            document.getElementById('inputNote').value = '';
-            setTimeout(() => {
-                document.getElementById('addSuccess').style.display = 'none';
-            }, 2000);
-        }
-
-        function showAddError(msg) {
-            document.getElementById('addError').textContent = msg;
-            document.getElementById('addError').style.display = 'block';
-            document.getElementById('addSuccess').style.display = 'none';
-        }
-
-        // ============== 批量导入 ==============
-        let parsedBatchData = [];
-
-        function openBatchImportModal() {
-            document.getElementById('batchImportModal').classList.add('active');
-            document.getElementById('batchInput').value = '';
-            document.getElementById('batchPreview').style.display = 'none';
-            document.getElementById('batchStats').style.display = 'none';
-            document.getElementById('batchImportBtn').disabled = true;
-            document.getElementById('batchSuccess').style.display = 'none';
-            document.getElementById('batchError').style.display = 'none';
-            parsedBatchData = [];
-        }
-
-        function closeBatchImportModal() {
-            document.getElementById('batchImportModal').classList.remove('active');
-        }
-
-        function parseDate(dateStr) {
-            dateStr = dateStr.trim();
-
-            // 格式: MMDD (如 1220)
-            if (/^\d{4}$/.test(dateStr)) {
-                return dateStr;
-            }
-
-            // 格式: MM-DD 或 M-D (如 12-20 或 1-5)
-            let match = dateStr.match(/^(\d{1,2})-(\d{1,2})$/);
-            if (match) {
-                return match[1].padStart(2, '0') + match[2].padStart(2, '0');
-            }
-
-            // 格式: M月D日 (如 12月20日)
-            match = dateStr.match(/^(\d{1,2})月(\d{1,2})日?$/);
-            if (match) {
-                return match[1].padStart(2, '0') + match[2].padStart(2, '0');
-            }
-
-            return null;
-        }
-
-        function parseBatchLine(line) {
-            line = line.trim();
-            if (!line) return null;
-
-            // 支持逗号或多个空格分隔
-            const parts = line.split(/[,，]\s*|\s{2,}/).map(p => p.trim()).filter(p => p);
-
-            if (parts.length < 3) return null;
-
-            const name = parts[0];
-            const date = parseDate(parts[1]);
-            const distance = parseFloat(parts[2]);
-            const note = parts[3] || null;
-
-            if (!name || !date || isNaN(distance)) return null;
-
-            return { name, date, distance, unit: 'km', note };
-        }
-
-        function previewBatchData() {
-            const input = document.getElementById('batchInput').value;
-            const lines = input.split('\n');
-
-            parsedBatchData = [];
-            let validCount = 0;
-            let invalidCount = 0;
-            let previewHtml = '';
-
-            lines.forEach((line, index) => {
-                if (!line.trim()) return;
-
-                const parsed = parseBatchLine(line);
-                if (parsed) {
-                    parsedBatchData.push(parsed);
-                    validCount++;
-                    previewHtml += `<div class="import-preview-item valid">✓ ${parsed.name} | ${formatDate(parsed.date)} | ${parsed.distance}km${parsed.note ? ' | ' + parsed.note : ''}</div>`;
-                } else {
-                    invalidCount++;
-                    previewHtml += `<div class="import-preview-item invalid">✗ 第${index + 1}行格式错误: ${line}</div>`;
-                }
-            });
-
-            document.getElementById('batchPreview').innerHTML = previewHtml || '<div>没有可预览的数据</div>';
-            document.getElementById('batchPreview').style.display = 'block';
-            document.getElementById('batchStats').innerHTML = `<span>有效: ${validCount}条</span><span>无效: ${invalidCount}条</span>`;
-            document.getElementById('batchStats').style.display = 'flex';
-            document.getElementById('batchImportBtn').disabled = validCount === 0;
-        }
-
-        async function executeBatchImport() {
-            if (parsedBatchData.length === 0) return;
-
-            showLoading('正在导入数据...');
-
-            if (isConnected && supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('running_records')
-                        .insert(parsedBatchData)
-                        .select();
-
-                    if (error) throw error;
-
-                    rawData.push(...data);
-                    document.getElementById('batchSuccess').textContent = `成功导入 ${data.length} 条数据!`;
-                    document.getElementById('batchSuccess').style.display = 'block';
-
-                } catch (err) {
-                    document.getElementById('batchError').textContent = '导入失败: ' + err.message;
-                    document.getElementById('batchError').style.display = 'block';
-                    hideLoading();
-                    return;
-                }
-            } else {
-                // 本地模式
-                let maxId = rawData.length > 0 ? Math.max(...rawData.map(r => r.id)) : 0;
-                parsedBatchData.forEach(record => {
-                    record.id = ++maxId;
-                    rawData.push(record);
-                });
-                document.getElementById('batchSuccess').textContent = `成功导入 ${parsedBatchData.length} 条数据!`;
-                document.getElementById('batchSuccess').style.display = 'block';
-            }
-
-            renderAll();
-            hideLoading();
-
-            // 清空并关闭
-            setTimeout(() => {
-                closeBatchImportModal();
-            }, 1500);
-        }
-
-        // ============== 添加数据弹窗 ==============
-        function openAddDataModal() {
-            const modal = document.getElementById('addDataModal');
-            modal.classList.add('active');
-
-            // 填充人员下拉框
-            const select = document.getElementById('inputName');
-            const persons = [...new Set(rawData.map(item => item.name))].sort();
-            select.innerHTML = '<option value="">-- 选择已有成员 --</option>';
-            persons.forEach(person => {
-                select.innerHTML += `<option value="${person}">${person}</option>`;
-            });
-
-            // 设置默认日期为今天
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('inputDate').value = today;
-
-            // 清空其他字段
-            document.getElementById('inputNewName').value = '';
-            document.getElementById('inputDistance').value = '';
-            document.getElementById('inputNote').value = '';
-            document.getElementById('addSuccess').style.display = 'none';
-            document.getElementById('addError').style.display = 'none';
-        }
-
-        function closeAddDataModal() {
-            document.getElementById('addDataModal').classList.remove('active');
         }
 
         // ============== 图表和统计 ==============
@@ -2431,12 +1817,7 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             const originalText = btn.innerHTML;
             btn.innerHTML = '⏳ 导出中...';
             btn.disabled = true;
-
             btn.style.display = 'none';
-            document.querySelector('.add-data-btn').style.display = 'none';
-            document.querySelector('.batch-import-btn').style.display = 'none';
-            document.querySelector('.config-btn').style.display = 'none';
-            document.getElementById('connectionStatus').style.display = 'none';
 
             html2canvas(document.getElementById('mainContainer'), {
                 backgroundColor: null,
@@ -2450,20 +1831,12 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                 link.click();
 
                 btn.style.display = 'block';
-                document.querySelector('.add-data-btn').style.display = 'block';
-                document.querySelector('.batch-import-btn').style.display = 'block';
-                document.querySelector('.config-btn').style.display = 'block';
-                document.getElementById('connectionStatus').style.display = 'block';
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }).catch(err => {
                 console.error('导出失败:', err);
                 alert('导出失败，请重试');
                 btn.style.display = 'block';
-                document.querySelector('.add-data-btn').style.display = 'block';
-                document.querySelector('.batch-import-btn').style.display = 'block';
-                document.querySelector('.config-btn').style.display = 'block';
-                document.getElementById('connectionStatus').style.display = 'block';
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             });
@@ -2796,31 +2169,19 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             // 隐藏所有可能遮挡的元素
             const exportBtn = event.target;
             const selectorContainer = document.querySelector('.person-selector-container');
-            const addBtn = document.querySelector('.add-data-btn');
-            const batchBtn = document.querySelector('.batch-import-btn');
             const exportMainBtn = document.querySelector('.export-btn');
-            const configBtn = document.querySelector('.config-btn');
-            const connectionStatus = document.getElementById('connectionStatus');
 
             // 保存原始显示状态
             const originalDisplays = {
                 exportBtn: exportBtn.style.display,
                 selector: selectorContainer.style.display,
-                add: addBtn.style.display,
-                batch: batchBtn.style.display,
-                exportMain: exportMainBtn.style.display,
-                config: configBtn.style.display,
-                status: connectionStatus.style.display
+                exportMain: exportMainBtn.style.display
             };
 
             // 隐藏所有元素
             exportBtn.style.display = 'none';
             selectorContainer.style.display = 'none';
-            addBtn.style.display = 'none';
-            batchBtn.style.display = 'none';
             exportMainBtn.style.display = 'none';
-            configBtn.style.display = 'none';
-            connectionStatus.style.display = 'none';
 
             // 强制确保内容可见(在原始 DOM 上操作,移除动画)
             yearSummaryContent.style.display = 'block';
@@ -2851,11 +2212,7 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                         // 恢复显示
                         exportBtn.style.display = originalDisplays.exportBtn || 'block';
                         selectorContainer.style.display = originalDisplays.selector || 'block';
-                        addBtn.style.display = originalDisplays.add || 'block';
-                        batchBtn.style.display = originalDisplays.batch || 'block';
                         exportMainBtn.style.display = originalDisplays.exportMain || 'block';
-                        configBtn.style.display = originalDisplays.config || 'block';
-                        connectionStatus.style.display = originalDisplays.status || 'block';
                         return;
                     }
 
@@ -2870,11 +2227,7 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                     // 恢复显示(但保持内容可见，不恢复动画)
                     exportBtn.style.display = originalDisplays.exportBtn || 'block';
                     selectorContainer.style.display = originalDisplays.selector || 'block';
-                    addBtn.style.display = originalDisplays.add || 'block';
-                    batchBtn.style.display = originalDisplays.batch || 'block';
                     exportMainBtn.style.display = originalDisplays.exportMain || 'block';
-                    configBtn.style.display = originalDisplays.config || 'block';
-                    connectionStatus.style.display = originalDisplays.status || 'block';
                 }).catch(err => {
                     console.error('导出失败:', err);
                     hideLoading();
@@ -2883,11 +2236,7 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
                     // 恢复显示(但保持内容可见，不恢复动画)
                     exportBtn.style.display = originalDisplays.exportBtn || 'block';
                     selectorContainer.style.display = originalDisplays.selector || 'block';
-                    addBtn.style.display = originalDisplays.add || 'block';
-                    batchBtn.style.display = originalDisplays.batch || 'block';
                     exportMainBtn.style.display = originalDisplays.exportMain || 'block';
-                    configBtn.style.display = originalDisplays.config || 'block';
-                    connectionStatus.style.display = originalDisplays.status || 'block';
                 });
             }, 800);
         }
@@ -2913,17 +2262,6 @@ CREATE POLICY "Allow all" ON running_records FOR ALL USING (true);</pre>
             renderDataTable();
             initYearSummarySelector();
         }
-
-        // 点击弹窗外部关闭
-        document.getElementById('addDataModal').addEventListener('click', function(e) {
-            if (e.target === this) closeAddDataModal();
-        });
-        document.getElementById('batchImportModal').addEventListener('click', function(e) {
-            if (e.target === this) closeBatchImportModal();
-        });
-        document.getElementById('configModal').addEventListener('click', function(e) {
-            if (e.target === this) closeConfigModal();
-        });
 
         // 初始化
         document.addEventListener('DOMContentLoaded', initApp);
