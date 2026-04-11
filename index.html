@@ -926,7 +926,7 @@
 
         <div class="charts-grid">
             <div class="chart-container">
-                <h2>📊 个人总里程排行</h2>
+                <h2>📊 个人总里程 Top6</h2>
                 <div class="chart-wrapper">
                     <canvas id="totalDistanceChart"></canvas>
                 </div>
@@ -1472,7 +1472,7 @@
         function renderTotalDistanceChart() {
             if (rawData.length === 0) return;
 
-            const data = getPersonalTotals();
+            const data = getPersonalTotals().slice(0, 6);  // 只取Top6
             const ctx = document.getElementById('totalDistanceChart').getContext('2d');
 
             if (totalDistanceChart) totalDistanceChart.destroy();
