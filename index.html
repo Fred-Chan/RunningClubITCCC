@@ -390,6 +390,12 @@
             width: 28px;
         }
 
+        .medal-icon.rank-number {
+            color: var(--text-secondary);
+            font-size: 0.95em;
+            font-weight: 600;
+        }
+
         .medal-name {
             flex: 1;
             font-weight: 500;
@@ -1965,6 +1971,9 @@
             `).join('');
         }
 
+        const MONTHLY_RANKING_LIMIT = 6;
+        const MONTHLY_MEDAL_LIMIT = 3;
+
         function getMonthlyMedals() {
             const monthlyData = {};
             const months = [...new Set(rawData.map(item => item.date.substring(0, 2)))].sort();
@@ -1981,11 +1990,12 @@
             months.forEach(month => {
                 monthlyRankings[month] = Object.entries(monthlyData[month])
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3)
+                    .slice(0, MONTHLY_RANKING_LIMIT)
                     .map(([name, distance], index) => ({
                         name,
                         distance,
-                        medal: index === 0 ? '🏅' : index === 1 ? '🥈' : '🥉'
+                        medal: index === 0 ? '🏅' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`,
+                        isMedal: index < MONTHLY_MEDAL_LIMIT
                     }));
             });
 
@@ -1997,7 +2007,7 @@
             const medalCounts = {};
 
             months.forEach(month => {
-                rankings[month].forEach((entry, index) => {
+                rankings[month].slice(0, MONTHLY_MEDAL_LIMIT).forEach((entry, index) => {
                     if (!medalCounts[entry.name]) medalCounts[entry.name] = { gold: 0, silver: 0, bronze: 0 };
                     if (index === 0) medalCounts[entry.name].gold++;
                     else if (index === 1) medalCounts[entry.name].silver++;
@@ -2021,7 +2031,7 @@
                     <h3>${getMonthName(month)}</h3>
                     ${rankings[month].map(entry => `
                         <div class="medal-row">
-                            <span class="medal-icon">${entry.medal}</span>
+                            <span class="medal-icon ${entry.isMedal ? '' : 'rank-number'}">${entry.medal}</span>
                             <span class="medal-name">${entry.name}</span>
                             <span class="medal-distance">${entry.distance.toFixed(2)} km</span>
                         </div>
@@ -2138,7 +2148,7 @@
             const { months, rankings } = getMonthlyMedals();
             let medalCount = 0;
             months.forEach(month => {
-                rankings[month].forEach(entry => {
+                rankings[month].slice(0, MONTHLY_MEDAL_LIMIT).forEach(entry => {
                     if (entry.name === name) medalCount++;
                 });
             });
